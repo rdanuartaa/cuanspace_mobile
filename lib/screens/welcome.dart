@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '/main.dart'; // Import main.dart for color constants
 
 class Welcome extends StatefulWidget {
   @override
@@ -26,7 +27,6 @@ class _WelcomeState extends State<Welcome> with SingleTickerProviderStateMixin {
 
     _controller.forward();
 
-    // Periksa status login
     _checkLoginStatus();
   }
 
@@ -34,11 +34,7 @@ class _WelcomeState extends State<Welcome> with SingleTickerProviderStateMixin {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     if (token != null) {
-      // Jika sudah login, navigasi ke splash screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => SplashScreen()),
-      );
+      Navigator.pushReplacementNamed(context, '/splash');
     }
   }
 
@@ -52,53 +48,44 @@ class _WelcomeState extends State<Welcome> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF1A237E), Color(0xFFF8BBD0)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentPage = index;
-                    });
-                    _controller.forward(from: 0);
-                  },
-                  children: [
-                    _buildPage(
-                      image: 'assets/images/Logo.png',
-                      title: 'Selamat Datang di Cuan Space',
-                      description:
-                          'Cuan Space adalah platform e-commerce untuk produk digital seperti font, template, dan aset kreatif lainnya.',
-                    ),
-                    _buildPage(
-                      image: 'assets/images/Logo.png',
-                      title: 'Temukan Aset Digital Terbaik',
-                      description:
-                          'Jelajahi koleksi font unik, template desain profesional, dan banyak lagi untuk mendukung proyek kreatif Anda.',
-                    ),
-                    _buildPage(
-                      image: 'assets/images/Logo.png',
-                      title: 'Mulai Sekarang',
-                      description:
-                          'Bergabunglah dengan komunitas kreator dan mulai menjual atau membeli produk digital dengan mudah di Cuan Space.',
-                    ),
-                  ],
-                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index;
+                  });
+                  _controller.forward(from: 0);
+                },
+                children: [
+                  _buildPage(
+                    image: 'assets/images/Logo.png',
+                    title: 'Welcome to Cuan Space',
+                    description:
+                        'Cuan Space is an e-commerce platform for digital products like fonts, templates, and other creative assets.',
+                  ),
+                  _buildPage(
+                    image: 'assets/images/Logo.png',
+                    title: 'Discover the Best Digital Assets',
+                    description:
+                        'Explore a collection of unique fonts, professional design templates, and more to support your creative projects.',
+                  ),
+                  _buildPage(
+                    image: 'assets/images/Logo.png',
+                    title: 'Get Started Now',
+                    description:
+                        'Join our community of creators and start selling or buying digital products effortlessly on Cuan Space.',
+                  ),
+                ],
               ),
-              _buildPageIndicator(),
-              _buildNavigationButtons(),
-              SizedBox(height: 20),
-            ],
-          ),
+            ),
+            _buildPageIndicator(),
+            _buildNavigationButtons(),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );
@@ -123,31 +110,24 @@ class _WelcomeState extends State<Welcome> with SingleTickerProviderStateMixin {
               fit: BoxFit.contain,
             ),
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           FadeTransition(
             opacity: _fadeAnimation,
             child: Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 24,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           FadeTransition(
             opacity: _fadeAnimation,
             child: Text(
               description,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 16,
-                color: Colors.white70,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                  ),
             ),
           ),
         ],
@@ -160,12 +140,12 @@ class _WelcomeState extends State<Welcome> with SingleTickerProviderStateMixin {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(3, (index) {
         return AnimatedContainer(
-          duration: Duration(milliseconds: 300),
-          margin: EdgeInsets.symmetric(horizontal: 4),
+          duration: const Duration(milliseconds: 300),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
           height: 8,
           width: _currentPage == index ? 24 : 8,
           decoration: BoxDecoration(
-            color: _currentPage == index ? Colors.white : Colors.white54,
+            color: _currentPage == index ? darkOrange : lightGrey,
             borderRadius: BorderRadius.circular(4),
           ),
         );
@@ -185,102 +165,27 @@ class _WelcomeState extends State<Welcome> with SingleTickerProviderStateMixin {
             },
             child: Text(
               'Skip',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 16,
-                color: Colors.white,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: darkOrange,
+                  ),
             ),
           ),
           ElevatedButton(
             onPressed: () {
               if (_currentPage < 2) {
                 _pageController.nextPage(
-                  duration: Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                 );
               } else {
                 Navigator.pushNamed(context, '/login');
               }
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.orange,
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-            ),
             child: Text(
               _currentPage < 2 ? 'Next' : 'Get Started',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class SplashScreen extends StatefulWidget {
-  @override
-  _SplashScreenState createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
-
-    _controller.forward();
-
-    // Navigasi ke /home setelah 2 detik
-    Future.delayed(Duration(seconds: 2), () {
-      Navigator.pushReplacementNamed(context, '/home');
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF1A237E), Color(0xFFF8BBD0)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Image.asset(
-              'assets/images/Logo.png',
-              width: 200,
-              height: 200,
-              fit: BoxFit.contain,
-            ),
-          ),
-        ),
       ),
     );
   }

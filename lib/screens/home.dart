@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cuan_space/services/api_service.dart';
 import '../models/kategori.dart';
 import '../models/product.dart';
-import 'notification.dart'; // Import halaman notifikasi
-import 'cart.dart'; // Import halaman keranjang
+import 'notification.dart';
+import 'cart.dart';
+import '/main.dart'; // Import main.dart for color constants
 
 class Home extends StatefulWidget {
   @override
@@ -31,7 +32,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     });
   }
 
-  // Fungsi untuk menampilkan notifikasi melayang
   void showFloatingNotification(String message) {
     OverlayEntry overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -43,10 +43,12 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
           borderRadius: BorderRadius.circular(8),
           elevation: 4,
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -56,8 +58,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
     Overlay.of(context).insert(overlayEntry);
 
-    // Hapus notifikasi setelah 3 detik
-    Future.delayed(Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 3), () {
       overlayEntry.remove();
     });
   }
@@ -67,14 +68,12 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       isLoading = true;
     });
 
-    // Fetch kategoris
     var kategoriResult = await _apiService.fetchKategoris();
     if (kategoriResult['navigateToLogin'] == true) {
       Navigator.pushNamed(context, '/login');
       return;
     }
 
-    // Fetch products
     var productResult = await _apiService.fetchProducts();
     if (productResult['navigateToLogin'] == true) {
       Navigator.pushNamed(context, '/login');
@@ -110,10 +109,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'OK',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: darkOrange,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
           ),
         ],
@@ -141,18 +140,15 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     }
   }
 
-  // Filter produk berdasarkan pencarian dan kategori
   List<Product> get filteredProducts {
     List<Product> filtered = products;
 
-    // Filter berdasarkan kategori yang dipilih
     if (_selectedCategoryIndex != null) {
       filtered = filtered
           .where((product) => product.kategoriId == kategoris[_selectedCategoryIndex!].id)
           .toList();
     }
 
-    // Filter berdasarkan pencarian
     if (_searchQuery.isNotEmpty) {
       filtered = filtered
           .where((product) =>
@@ -168,16 +164,14 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       body: isLoading
-          ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
+          ? Center(child: CircularProgressIndicator(color: darkOrange))
           : CustomScrollView(
               slivers: [
-                // Header dengan Nama Aplikasi, Search Bar, dan Ikon
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     child: Row(
                       children: [
-                        // Nama Aplikasi
                         Text(
                           'Cuan Space',
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -185,40 +179,25 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                                 fontWeight: FontWeight.w700,
                               ),
                         ),
-                        SizedBox(width: 16),
-                        // Search Bar
+                        const SizedBox(width: 16),
                         Expanded(
                           child: TextField(
                             controller: _searchController,
-                            decoration: InputDecoration(
-                              hintText: 'Cari produk digital...',
-                              hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.secondary,
-                                  ),
-                              prefixIcon: Icon(
-                                Icons.search,
-                                color: Theme.of(context).colorScheme.secondary,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                            decoration: const InputDecoration(
+                              hintText: 'Search digital products...',
                             ),
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ),
-                        SizedBox(width: 8),
-                        // Ikon Notifikasi
+                        const SizedBox(width: 8),
                         IconButton(
-                          icon: Icon(Icons.notifications, color: Theme.of(context).iconTheme.color),
+                          icon: Icon(Icons.notifications, color: darkOrange),
                           onPressed: () {
                             Navigator.pushNamed(context, '/notification');
                           },
                         ),
-                        // Ikon Keranjang
                         IconButton(
-                          icon: Icon(Icons.shopping_cart_outlined, color: Theme.of(context).iconTheme.color),
+                          icon: Icon(Icons.shopping_cart_outlined, color: darkOrange),
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -230,27 +209,25 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                     ),
                   ),
                 ),
-
-                // Kategori
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Kategori Produk Digital',
+                          'Digital Product Categories',
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
                               ),
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         kategoris.isEmpty
                             ? Text(
-                                'Tidak ada kategori tersedia.',
+                                'No categories available.',
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Theme.of(context).colorScheme.secondary,
+                                      color: lightGrey,
                                     ),
                               )
                             : SizedBox(
@@ -261,29 +238,25 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                                   itemBuilder: (context, index) {
                                     final isSelected = _selectedCategoryIndex == index;
                                     return Padding(
-                                      padding: EdgeInsets.only(right: 12),
+                                      padding: const EdgeInsets.only(right: 12),
                                       child: GestureDetector(
                                         onTap: () {
                                           setState(() {
                                             if (isSelected) {
-                                              _selectedCategoryIndex = null; // Deselect jika sudah dipilih
+                                              _selectedCategoryIndex = null;
                                             } else {
-                                              _selectedCategoryIndex = index; // Pilih kategori
+                                              _selectedCategoryIndex = index;
                                             }
                                           });
                                         },
                                         child: AnimatedContainer(
-                                          duration: Duration(milliseconds: 200),
-                                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                          duration: const Duration(milliseconds: 200),
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                           decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                                                : Theme.of(context).colorScheme.surface,
+                                            color: isSelected ? darkOrange.withOpacity(0.1) : lightGrey,
                                             borderRadius: BorderRadius.circular(20),
                                             border: Border.all(
-                                              color: isSelected
-                                                  ? Theme.of(context).colorScheme.primary
-                                                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
+                                              color: isSelected ? darkOrange : lightGrey,
                                               width: isSelected ? 2 : 1,
                                             ),
                                           ),
@@ -294,18 +267,14 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                                       fontWeight: FontWeight.w600,
                                                       fontSize: 16,
-                                                      color: isSelected
-                                                          ? Theme.of(context).colorScheme.primary
-                                                          : Theme.of(context).colorScheme.onSurface,
+                                                      color: isSelected ? darkOrange : Theme.of(context).colorScheme.onSurface,
                                                     ),
                                               ),
-                                              SizedBox(width: 4),
+                                              const SizedBox(width: 4),
                                               Icon(
                                                 Icons.arrow_drop_down,
                                                 size: 20,
-                                                color: isSelected
-                                                    ? Theme.of(context).colorScheme.primary
-                                                    : Theme.of(context).colorScheme.onSurface,
+                                                color: isSelected ? darkOrange : Theme.of(context).colorScheme.onSurface,
                                               ),
                                             ],
                                           ),
@@ -319,22 +288,20 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                     ),
                   ),
                 ),
-
-                // Produk
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Produk Digital Populer',
+                          'Popular Digital Products',
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
                               ),
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                       ],
                     ),
                   ),
@@ -342,19 +309,19 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                 filteredProducts.isEmpty
                     ? SliverToBoxAdapter(
                         child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           child: Text(
-                            'Tidak ada produk tersedia.',
+                            'No products available.',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.secondary,
+                                  color: lightGrey,
                                 ),
                           ),
                         ),
                       )
                     : SliverPadding(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                         sliver: SliverGrid(
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
@@ -369,53 +336,40 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                           ),
                         ),
                       ),
-                SliverToBoxAdapter(child: SizedBox(height: 16)),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
               ],
             ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-              spreadRadius: 2,
-              blurRadius: 8,
-              offset: Offset(0, -2),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home, size: 28),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.explore, size: 28),
+            label: 'Explore',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person, size: 28),
+            label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications, size: 28),
+            label: 'Notifications',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: darkOrange,
+        unselectedItemColor: pureBlack,
+        selectedLabelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home, size: 28),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.explore, size: 28),
-              label: 'Explore',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person, size: 28),
-              label: 'Profile',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications, size: 28),
-              label: 'Notifications',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: Theme.of(context).colorScheme.primary,
-          unselectedItemColor: Theme.of(context).colorScheme.secondary,
-          selectedLabelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-          unselectedLabelStyle: Theme.of(context).textTheme.bodySmall,
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-          showUnselectedLabels: true,
-        ),
+        unselectedLabelStyle: Theme.of(context).textTheme.bodyMedium,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        showUnselectedLabels: true,
       ),
     );
   }
@@ -427,7 +381,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   }
 }
 
-// Widget untuk kotak produk
 class ProductCard extends StatefulWidget {
   final Product product;
 
@@ -444,7 +397,6 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    // Animasi fade-in saat produk dimuat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
         _opacity = 1.0;
@@ -464,7 +416,6 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
         setState(() {
           _isHovered = false;
         });
-        // Navigasi ke halaman detail produk
         Navigator.pushNamed(
           context,
           '/product_detail',
@@ -478,12 +429,12 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
       },
       child: AnimatedOpacity(
         opacity: _opacity,
-        duration: Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 500),
         child: AnimatedContainer(
-          duration: Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 200),
           transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
           child: Card(
-            color: Theme.of(context).cardColor,
+            color: Theme.of(context).colorScheme.surface,
             elevation: _isHovered ? 6 : 2,
             shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
             shape: RoundedRectangleBorder(
@@ -494,19 +445,19 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                     child: Image.network(
                       '${ApiService.storageUrl}/${widget.product.thumbnail}',
                       fit: BoxFit.cover,
                       width: double.infinity,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          color: Theme.of(context).colorScheme.surface,
+                          color: lightGrey,
                           child: Center(
                             child: Icon(
                               Icons.broken_image,
                               size: 60,
-                              color: Theme.of(context).colorScheme.secondary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                         );
@@ -515,7 +466,7 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -528,21 +479,20 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         'Rp ${widget.product.price.toStringAsFixed(0)}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
+                              color: darkOrange,
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                             ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         widget.product.description,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.secondary,
-                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                             ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,

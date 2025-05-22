@@ -20,6 +20,12 @@ import 'screens/edit_profile.dart';
 import 'models/user_model.dart';
 import 'models/product.dart';
 
+// WARNA PALET FINAL
+const darkOrange = Color(0xFFF46A24);   // Orange gelap
+const pureBlack = Color(0xFF201A1A);    // Hitam solid
+const softWhite = Color(0xFFFFFFFF);    // Putih
+const lightGrey = Color(0xFFEDEDED);    // Abu terang
+
 void main() {
   runApp(
     ChangeNotifierProvider(
@@ -34,40 +40,104 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
-        primarySwatch: Colors.orange,
+        primaryColor: darkOrange,
+        scaffoldBackgroundColor: softWhite,
         colorScheme: ColorScheme.light(
-          primary: Colors.orange,
-          secondary: Colors.grey,
-          surface: Colors.white,
-          onSurface: Colors.black,
+          primary: darkOrange,
+          secondary: pureBlack,
+          error: Colors.red[700]!,
+          background: lightGrey,
+          onPrimary: softWhite,
+          surface: lightGrey,
+          onSurface: pureBlack,
         ),
         textTheme: TextTheme(
-          bodyMedium: TextStyle(fontSize: 16, color: Colors.black, fontFamily: 'Poppins'),
-          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          bodyMedium: TextStyle(fontSize: 16, color: pureBlack, fontFamily: 'Poppins'),
+          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: darkOrange, fontFamily: 'Poppins'),
         ),
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.orange,
-          titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          backgroundColor: darkOrange,
+          titleTextStyle: TextStyle(color: softWhite, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          iconTheme: IconThemeData(color: softWhite),
+          elevation: 0,
         ),
-        scaffoldBackgroundColor: Colors.white,
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: darkOrange,
+            foregroundColor: softWhite,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            textStyle: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: lightGrey,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: darkOrange, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: lightGrey),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: darkOrange, width: 2),
+          ),
+          labelStyle: TextStyle(color: pureBlack),
+        ),
       ),
       darkTheme: ThemeData(
-        primarySwatch: Colors.orange,
+        primaryColor: darkOrange,
+        scaffoldBackgroundColor: pureBlack,
         colorScheme: ColorScheme.dark(
-          primary: Colors.deepOrange,
-          secondary: Colors.grey,
-          surface: Colors.grey[900]!,
-          onSurface: Colors.white,
+          primary: darkOrange,
+          secondary: lightGrey,
+          error: Colors.red[700]!,
+          background: pureBlack,
+          onPrimary: softWhite,
+          surface: pureBlack,
+          onSurface: softWhite,
         ),
         textTheme: TextTheme(
-          bodyMedium: TextStyle(fontSize: 16, color: Colors.white,fontFamily: 'Poppins'),
-          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          bodyMedium: TextStyle(fontSize: 16, color: softWhite, fontFamily: 'Poppins'),
+          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: darkOrange, fontFamily: 'Poppins'),
         ),
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.orange,
-          titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          backgroundColor: darkOrange,
+          titleTextStyle: TextStyle(color: softWhite, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          iconTheme: IconThemeData(color: softWhite),
+          elevation: 0,
         ),
-        scaffoldBackgroundColor: Colors.grey[900],
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: darkOrange,
+            foregroundColor: softWhite,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            textStyle: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: pureBlack,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: darkOrange, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: lightGrey),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: darkOrange, width: 2),
+          ),
+          labelStyle: TextStyle(color: softWhite),
+        ),
       ),
       themeMode: Provider.of<ThemeProvider>(context).themeMode,
       initialRoute: '/welcome',

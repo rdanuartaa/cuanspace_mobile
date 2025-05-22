@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'cart.dart'; // Import halaman keranjang
+import 'cart.dart';
+import '/main.dart'; // Import main.dart for color constants
 
 class Notification extends StatefulWidget {
   @override
@@ -19,7 +20,6 @@ class _NotificationState extends State<Notification> {
     fetchNotifications();
   }
 
-  // Fungsi untuk menampilkan notifikasi melayang
   void showFloatingNotification(String message) {
     OverlayEntry overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -27,14 +27,16 @@ class _NotificationState extends State<Notification> {
         left: 16,
         right: 16,
         child: Material(
-          color: Colors.grey[700],
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(8),
           elevation: 4,
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Text(
               message,
-              style: TextStyle(color: Colors.white, fontSize: 16),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -44,8 +46,7 @@ class _NotificationState extends State<Notification> {
 
     Overlay.of(context).insert(overlayEntry);
 
-    // Hapus notifikasi setelah 3 detik
-    Future.delayed(Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 3), () {
       overlayEntry.remove();
     });
   }
@@ -72,7 +73,7 @@ class _NotificationState extends State<Notification> {
       setState(() {
         isLoading = false;
       });
-      showFloatingNotification('Gagal memuat notifikasi: $e');
+      showFloatingNotification('Failed to load notifications: $e');
     }
   }
 
@@ -99,11 +100,10 @@ class _NotificationState extends State<Notification> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           isLoading
-              ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
+              ? Center(child: CircularProgressIndicator(color: darkOrange))
               : notifications.isEmpty
                   ? Center(
                       child: Column(
@@ -112,44 +112,43 @@ class _NotificationState extends State<Notification> {
                           Icon(
                             Icons.notifications_none,
                             size: 80,
-                            color: Colors.grey[400],
+                            color: lightGrey,
                           ),
-                          SizedBox(height: 16),
+                          const SizedBox(height: 16),
                           Text(
-                            'Tidak Ada Notifikasi',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.grey[400],
+                            'No Notifications',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: lightGrey,
                                 ),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
-                            'Notifikasi akan muncul di sini saat tersedia.',
+                            'Notifications will appear here when available.',
                             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.grey[400],
+                                  color: lightGrey,
                                 ),
                           ),
                         ],
                       ),
                     )
                   : ListView.builder(
-                      padding: EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
                       itemCount: notifications.length,
                       itemBuilder: (context, index) {
                         final notification = notifications[index];
                         return Card(
-                          color: Colors.grey[800],
+                          color: Theme.of(context).colorScheme.surface,
                           child: ListTile(
-                            contentPadding: EdgeInsets.all(12),
+                            contentPadding: const EdgeInsets.all(12),
                             leading: CircleAvatar(
-                              backgroundColor: Colors.grey[700],
+                              backgroundColor: lightGrey,
                               child: Icon(
                                 notification['type'] == 'promo'
                                     ? Icons.local_offer
                                     : notification['type'] == 'chat'
                                         ? Icons.message
                                         : Icons.info,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: darkOrange,
                               ),
                             ),
                             title: Text(
@@ -161,35 +160,32 @@ class _NotificationState extends State<Notification> {
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
                                 Text(
                                   notification['description'],
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Colors.grey[400],
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                       ),
                                 ),
-                                SizedBox(height: 4),
+                                const SizedBox(height: 4),
                                 Text(
                                   notification['time'],
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Colors.grey[400],
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                       ),
                                 ),
                               ],
                             ),
-                            onTap: () {
-                              // Aksi saat notifikasi diklik (misalnya, navigasi ke detail)
-                            },
+                            onTap: () {},
                           ),
                         );
                       },
                     ),
-          // Tombol Kembali dan Ikon Keranjang
           Positioned(
             top: 10,
             left: 10,
             child: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white),
+              icon: Icon(Icons.arrow_back, color: darkOrange),
               onPressed: () {
                 Navigator.pop(context);
               },
@@ -199,7 +195,7 @@ class _NotificationState extends State<Notification> {
             top: 10,
             right: 10,
             child: IconButton(
-              icon: Icon(Icons.shopping_cart_outlined, color: Colors.white),
+              icon: Icon(Icons.shopping_cart_outlined, color: darkOrange),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -210,50 +206,37 @@ class _NotificationState extends State<Notification> {
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[800],
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              spreadRadius: 2,
-              blurRadius: 8,
-              offset: Offset(0, -2),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home, size: 28),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.explore, size: 28),
+            label: 'Explore',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person, size: 28),
+            label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications, size: 28),
+            label: 'Notifications',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: darkOrange,
+        unselectedItemColor: pureBlack,
+        selectedLabelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home, size: 28),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.explore, size: 28),
-              label: 'Explore',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person, size: 28),
-              label: 'Profile',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications, size: 28),
-              label: 'Notifications',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: Theme.of(context).colorScheme.primary,
-          unselectedItemColor: Colors.grey[400],
-          selectedLabelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-          unselectedLabelStyle: Theme.of(context).textTheme.bodySmall,
-          backgroundColor: Colors.grey[800],
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-          showUnselectedLabels: true,
-        ),
+        unselectedLabelStyle: Theme.of(context).textTheme.bodyMedium,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        showUnselectedLabels: true,
       ),
     );
   }
