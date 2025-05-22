@@ -5,7 +5,8 @@ import '../services/api_service.dart';
 import 'about_us.dart';
 import 'settings.dart';
 import 'help_center.dart';
-import 'cart.dart'; // Import halaman keranjang
+import 'cart.dart';
+import '/main.dart'; // Import main.dart for color constants
 
 class Profile extends StatefulWidget {
   @override
@@ -26,7 +27,6 @@ class _ProfileState extends State<Profile> {
     fetchUserData();
   }
 
-  // Fungsi untuk menampilkan notifikasi melayang
   void showFloatingNotification(String message) {
     OverlayEntry overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -38,10 +38,12 @@ class _ProfileState extends State<Profile> {
           borderRadius: BorderRadius.circular(8),
           elevation: 4,
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -51,8 +53,7 @@ class _ProfileState extends State<Profile> {
 
     Overlay.of(context).insert(overlayEntry);
 
-    // Hapus notifikasi setelah 3 detik
-    Future.delayed(Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 3), () {
       overlayEntry.remove();
     });
   }
@@ -98,20 +99,20 @@ class _ProfileState extends State<Profile> {
         return AlertDialog(
           backgroundColor: Theme.of(context).colorScheme.surface,
           title: Text(
-            'Konfirmasi Logout',
+            'Confirm Logout',
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           content: Text(
-            'Apakah Anda yakin ingin keluar dari akun Anda?',
+            'Are you sure you want to log out of your account?',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
-                'Batal',
+                'Cancel',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.secondary,
+                      color: lightGrey,
                     ),
               ),
             ),
@@ -127,19 +128,20 @@ class _ProfileState extends State<Profile> {
                     isLoading = false;
                   });
                   navigator.pushReplacementNamed('/login');
-                  showFloatingNotification(result['message'] ?? 'Logout berhasil.');
+                  showFloatingNotification(result['message'] ?? 'Logout successful.');
                 } catch (e) {
                   setState(() {
                     isLoading = false;
                   });
                   navigator.pushReplacementNamed('/login');
-                  showFloatingNotification('Logout berhasil (sesi lokal dihapus).');
+                  showFloatingNotification('Logout successful (local session cleared).');
                 }
               },
               child: Text(
                 'Logout',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.red,
+                      color: darkOrange,
+                      fontWeight: FontWeight.bold,
                     ),
               ),
             ),
@@ -172,18 +174,17 @@ class _ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(height: 60), // Ruang untuk tombol kembali dan ikon
+                const SizedBox(height: 60),
                 CircleAvatar(
                   radius: 60,
-                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  backgroundColor: darkOrange.withOpacity(0.1),
                   child: user != null &&
                           user!.userDetail?.profilePhoto != null &&
                           user!.userDetail!.profilePhoto!.isNotEmpty
@@ -199,7 +200,7 @@ class _ProfileState extends State<Profile> {
                               return Icon(
                                 Icons.person,
                                 size: 70,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: darkOrange,
                               );
                             },
                           ),
@@ -207,10 +208,10 @@ class _ProfileState extends State<Profile> {
                       : Icon(
                           Icons.person,
                           size: 70,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: darkOrange,
                         ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Text(
                   user?.name ?? 'Loading...',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -218,36 +219,36 @@ class _ProfileState extends State<Profile> {
                         fontWeight: FontWeight.w700,
                       ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   user?.email ?? '',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.secondary,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       ),
                 ),
-                SizedBox(height: 24),
+                const SizedBox(height: 24),
                 Card(
-                  color: Theme.of(context).cardColor,
+                  color: Theme.of(context).colorScheme.surface,
                   child: Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Informasi Pribadi',
+                          'Personal Information',
                           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 fontSize: 18,
                               ),
                         ),
-                        SizedBox(height: 16),
-                        _buildDetailRow(Icons.phone, 'Nomor Telepon', user?.userDetail?.phone ?? '-'),
-                        _buildDetailRow(Icons.location_on, 'Alamat', user?.userDetail?.address ?? '-'),
-                        _buildDetailRow(Icons.transgender, 'Jenis Kelamin', user?.userDetail?.gender ?? '-'),
+                        const SizedBox(height: 16),
+                        _buildDetailRow(Icons.phone, 'Phone Number', user?.userDetail?.phone ?? '-'),
+                        _buildDetailRow(Icons.location_on, 'Address', user?.userDetail?.address ?? '-'),
+                        _buildDetailRow(Icons.transgender, 'Gender', user?.userDetail?.gender ?? '-'),
                         _buildDetailRow(
-                            Icons.calendar_today, 'Tanggal Lahir', user?.userDetail?.dateOfBirth ?? '-'),
-                        _buildDetailRow(Icons.account_balance, 'Agama', user?.userDetail?.religion ?? '-'),
+                            Icons.calendar_today, 'Date of Birth', user?.userDetail?.dateOfBirth ?? '-'),
+                        _buildDetailRow(Icons.account_balance, 'Religion', user?.userDetail?.religion ?? '-'),
                         _buildDetailRow(Icons.work, 'Status', user?.userDetail?.status ?? '-'),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         Center(
                           child: ElevatedButton(
                             onPressed: () {
@@ -260,7 +261,7 @@ class _ProfileState extends State<Profile> {
                               });
                             },
                             child: Text(
-                              'Edit Profil',
+                              'Edit Profile',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -272,18 +273,18 @@ class _ProfileState extends State<Profile> {
                     ),
                   ),
                 ),
-                SizedBox(height: 24),
+                const SizedBox(height: 24),
                 Card(
-                  color: Theme.of(context).cardColor,
+                  color: Theme.of(context).colorScheme.surface,
                   child: Column(
                     children: [
                       ListTile(
                         leading: Icon(
                           Icons.info,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: darkOrange,
                         ),
                         title: Text(
-                          'Tentang Kami',
+                          'About Us',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w500,
                               ),
@@ -295,10 +296,10 @@ class _ProfileState extends State<Profile> {
                       ListTile(
                         leading: Icon(
                           Icons.settings,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: darkOrange,
                         ),
                         title: Text(
-                          'Pengaturan',
+                          'Settings',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w500,
                               ),
@@ -310,10 +311,10 @@ class _ProfileState extends State<Profile> {
                       ListTile(
                         leading: Icon(
                           Icons.help,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: darkOrange,
                         ),
                         title: Text(
-                          'Pusat Bantuan',
+                          'Help Center',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w500,
                               ),
@@ -325,13 +326,13 @@ class _ProfileState extends State<Profile> {
                       ListTile(
                         leading: Icon(
                           Icons.logout,
-                          color: Colors.red,
+                          color: darkOrange,
                         ),
                         title: Text(
                           'Logout',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w500,
-                                color: Colors.red,
+                                color: darkOrange,
                               ),
                         ),
                         onTap: _logout,
@@ -342,12 +343,11 @@ class _ProfileState extends State<Profile> {
               ],
             ),
           ),
-          // Tombol Kembali dan Ikon
           Positioned(
             top: 10,
             left: 10,
             child: IconButton(
-              icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
+              icon: Icon(Icons.arrow_back, color: darkOrange),
               onPressed: () {
                 Navigator.pop(context);
               },
@@ -359,13 +359,13 @@ class _ProfileState extends State<Profile> {
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.settings, color: Theme.of(context).iconTheme.color),
+                  icon: Icon(Icons.settings, color: darkOrange),
                   onPressed: () {
                     Navigator.pushNamed(context, '/settings');
                   },
                 ),
                 IconButton(
-                  icon: Icon(Icons.shopping_cart_outlined, color: Theme.of(context).iconTheme.color),
+                  icon: Icon(Icons.shopping_cart_outlined, color: darkOrange),
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -378,65 +378,52 @@ class _ProfileState extends State<Profile> {
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
-              spreadRadius: 2,
-              blurRadius: 8,
-              offset: Offset(0, -2),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home, size: 28),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.explore, size: 28),
+            label: 'Explore',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person, size: 28),
+            label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications, size: 28),
+            label: 'Notifications',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: darkOrange,
+        unselectedItemColor: pureBlack,
+        selectedLabelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home, size: 28),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.explore, size: 28),
-              label: 'Explore',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person, size: 28),
-              label: 'Profile',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications, size: 28),
-              label: 'Notifications',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: Theme.of(context).colorScheme.primary,
-          unselectedItemColor: Theme.of(context).colorScheme.secondary,
-          selectedLabelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-          unselectedLabelStyle: Theme.of(context).textTheme.bodySmall,
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-          showUnselectedLabels: true,
-        ),
+        unselectedLabelStyle: Theme.of(context).textTheme.bodyMedium,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        showUnselectedLabels: true,
       ),
     );
   }
 
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
           Icon(
             icon,
-            color: Theme.of(context).colorScheme.primary,
+            color: darkOrange,
             size: 24,
           ),
-          SizedBox(width: 16),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -447,11 +434,11 @@ class _ProfileState extends State<Profile> {
                         fontWeight: FontWeight.w500,
                       ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   value,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.secondary,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                       ),
                 ),
               ],

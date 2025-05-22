@@ -6,11 +6,11 @@ import '../models/product.dart';
 import '../models/user_model.dart';
 
 class ApiService {
-  //static const String baseUrl = 'http://127.0.0.1:8000/api'; // Sesuaikan dengan web Anda
+static const String baseUrl = 'http://127.0.0.1:8000/api'; // Sesuaikan dengan web Anda
   //static const String baseUrl = 'http://10.0.2.2/api'; // Sesuaikan dengan emulator Anda
-   static const String baseUrl = 'http://192.168.189.55:8000/api'; 
-  static const String storageUrl = 'http://192.168.189.55:8000/storage'; // Storage endpoint
-//static const String storageUrl = 'http://127.0.0.1:8000/storage'; 
+  //  static const String baseUrl = 'http://192.168.189.55:8000/api'; 
+  // static const String storageUrl = 'http://192.168.189.55:8000/storage'; // Storage endpoint
+static const String storageUrl = 'http://127.0.0.1:8000/storage'; 
   // Fungsi untuk login
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {

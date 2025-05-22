@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'cart.dart'; // Import halaman keranjang
+import 'cart.dart';
+import '/main.dart'; // Import main.dart for color constants
 
 class Explore extends StatefulWidget {
   @override
@@ -32,44 +33,43 @@ class _ExploreState extends State<Explore> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           Padding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                SizedBox(height: 60), // Ruang untuk tombol kembali dan ikon
+                const SizedBox(height: 60),
                 Expanded(
                   child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
                       childAspectRatio: 0.75,
                     ),
-                    itemCount: 8, // Placeholder for demo categories/products
+                    itemCount: 8,
                     itemBuilder: (context, index) {
                       return Card(
-                        color: Colors.grey[800],
+                        color: Theme.of(context).colorScheme.surface,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Expanded(
                               child: ClipRRect(
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                                 child: Container(
-                                  color: Colors.grey[700],
+                                  color: lightGrey,
                                   child: Icon(
                                     Icons.fastfood,
                                     size: 80,
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color: darkOrange,
                                   ),
                                 ),
                               ),
                             ),
                             Padding(
-                              padding: EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(12),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -79,11 +79,11 @@ class _ExploreState extends State<Explore> {
                                           fontWeight: FontWeight.w600,
                                         ),
                                   ),
-                                  SizedBox(height: 4),
+                                  const SizedBox(height: 4),
                                   Text(
                                     'Explore items',
                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Colors.grey[400],
+                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                         ),
                                   ),
                                 ],
@@ -98,12 +98,11 @@ class _ExploreState extends State<Explore> {
               ],
             ),
           ),
-          // Tombol Kembali dan Ikon Keranjang
           Positioned(
             top: 10,
             left: 10,
             child: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white),
+              icon: Icon(Icons.arrow_back, color: darkOrange),
               onPressed: () {
                 Navigator.pop(context);
               },
@@ -113,7 +112,7 @@ class _ExploreState extends State<Explore> {
             top: 10,
             right: 10,
             child: IconButton(
-              icon: Icon(Icons.shopping_cart_outlined, color: Colors.white),
+              icon: Icon(Icons.shopping_cart_outlined, color: darkOrange),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -124,50 +123,37 @@ class _ExploreState extends State<Explore> {
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[800],
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              spreadRadius: 2,
-              blurRadius: 8,
-              offset: Offset(0, -2),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home, size: 28),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.explore, size: 28),
+            label: 'Explore',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person, size: 28),
+            label: 'Profile',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications, size: 28),
+            label: 'Notifications',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: darkOrange,
+        unselectedItemColor: pureBlack,
+        selectedLabelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home, size: 28),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.explore, size: 28),
-              label: 'Explore',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person, size: 28),
-              label: 'Profile',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications, size: 28),
-              label: 'Notifications',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: Theme.of(context).colorScheme.primary,
-          unselectedItemColor: Colors.grey[400],
-          selectedLabelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-          unselectedLabelStyle: Theme.of(context).textTheme.bodySmall,
-          backgroundColor: Colors.grey[800],
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-          showUnselectedLabels: true,
-        ),
+        unselectedLabelStyle: Theme.of(context).textTheme.bodyMedium,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        showUnselectedLabels: true,
       ),
     );
   }
