@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '/services/theme_provider.dart';
+import 'screens/chat.dart';
 import 'screens/welcome.dart';
 import 'screens/login.dart';
 import 'screens/register.dart';
@@ -13,6 +14,7 @@ import 'screens/product_detail.dart';
 import 'screens/cart.dart';
 import 'screens/forgotpassword.dart';
 import 'screens/resetpassword.dart';
+import 'screens/sellerprofile.dart';
 import 'screens/settings.dart';
 import 'screens/about_us.dart';
 import 'screens/help_center.dart';
@@ -55,6 +57,7 @@ class MyApp extends StatelessWidget {
         textTheme: TextTheme(
           bodyMedium: TextStyle(fontSize: 14, color: pureBlack, fontFamily: 'Poppins'),
           headlineSmall: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: darkOrange, fontFamily: 'Poppins'),
+          titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: pureBlack, fontFamily: 'Poppins'),
         ),
         appBarTheme: AppBarTheme(
           backgroundColor: darkOrange,
@@ -112,6 +115,7 @@ class MyApp extends StatelessWidget {
         textTheme: TextTheme(
           bodyMedium: TextStyle(fontSize: 14, color: softWhite, fontFamily: 'Poppins'),
           headlineSmall: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: darkOrange, fontFamily: 'Poppins'),
+          titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: softWhite, fontFamily: 'Poppins'),
         ),
         appBarTheme: AppBarTheme(
           backgroundColor: darkOrange,
@@ -176,6 +180,11 @@ class MyApp extends StatelessWidget {
         '/help_center': (context) => HelpCenterPage(),
         '/edit_profile': (context) => EditProfile(
               user: ModalRoute.of(context)!.settings.arguments as User,
+            ),
+        '/chat': (context) => ChatScreen(),
+        '/seller-profile': (context) => SellerProfileScreen(
+              sellerId: ModalRoute.of(context)!.settings.arguments as int,
+              sellerName: 'Nama Seller',
             ),
       },
     );

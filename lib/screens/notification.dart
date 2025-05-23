@@ -1,23 +1,39 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../services/api_service.dart';
+import '../models/chat.dart';
 import 'cart.dart';
-import '/main.dart'; // Import main.dart for color constants
+import '/main.dart'; // Import main.dart untuk konstanta warna
 
 class Notification extends StatefulWidget {
   @override
   _NotificationState createState() => _NotificationState();
 }
 
-class _NotificationState extends State<Notification> {
+class _NotificationState extends State<Notification> with SingleTickerProviderStateMixin {
   int _selectedIndex = 2;
   List<dynamic> notifications = [];
-  bool isLoading = true;
+  List<Chat> chats = [];
+  bool isLoadingNotifications = true;
+  bool isLoadingChats = true;
   final ApiService apiService = ApiService();
+  Timer? _pollingTimer;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     fetchNotifications();
+    fetchChats();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(Duration(seconds: 10), (timer) {
+      fetchNotifications(silent: true);
+      fetchChats(silent: true);
+    });
   }
 
   void showFloatingNotification(String message) {
@@ -52,29 +68,59 @@ class _NotificationState extends State<Notification> {
     });
   }
 
-  Future<void> fetchNotifications() async {
+  Future<void> fetchNotifications({bool silent = false}) async {
     try {
       final result = await apiService.fetchNotifications();
       if (result['success']) {
         setState(() {
           notifications = result['data'];
-          isLoading = false;
+          if (!silent) isLoadingNotifications = false;
         });
       } else {
         setState(() {
-          isLoading = false;
+          if (!silent) isLoadingNotifications = false;
         });
         if (result['navigateToLogin'] == true) {
           Navigator.pushReplacementNamed(context, '/login');
-        } else {
+        } else if (!silent) {
           showFloatingNotification(result['message']);
         }
       }
     } catch (e) {
       setState(() {
-        isLoading = false;
+        if (!silent) isLoadingNotifications = false;
       });
-      showFloatingNotification('Failed to load notifications: $e');
+      if (!silent) {
+        showFloatingNotification('Gagal memuat notifikasi: $e');
+      }
+    }
+  }
+
+  Future<void> fetchChats({bool silent = false}) async {
+    try {
+      final result = await apiService.fetchChats();
+      if (result['success']) {
+        setState(() {
+          chats = result['data'];
+          if (!silent) isLoadingChats = false;
+        });
+      } else {
+        setState(() {
+          if (!silent) isLoadingChats = false;
+        });
+        if (result['navigateToLogin'] == true) {
+          Navigator.pushReplacementNamed(context, '/login');
+        } else if (!silent) {
+          showFloatingNotification(result['message']);
+        }
+      }
+    } catch (e) {
+      setState(() {
+        if (!silent) isLoadingChats = false;
+      });
+      if (!silent) {
+        showFloatingNotification('Gagal memuat daftar chat: $e');
+      }
     }
   }
 
@@ -101,153 +147,274 @@ class _NotificationState extends State<Notification> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: AppBar(
+        title: Text('Notifikasi & Pesan', style: Theme.of(context).textTheme.titleLarge),
+        backgroundColor: darkOrange,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: softWhite,
+          unselectedLabelColor: softWhite.withOpacity(0.7),
+          indicatorColor: softWhite,
+          tabs: [
+            Tab(text: 'Notifikasi'),
+            Tab(text: 'Pesan'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
-            decoration: const BoxDecoration(
-              color: Color.fromARGB(255, 255, 255, 255), // warna biru
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Stack(
-              children: [
-                isLoading
-                    ? Center(child: CircularProgressIndicator(color: darkOrange))
-                    : notifications.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.notifications_none,
-                                  size: 70,
+          // Tab Notifikasi
+          isLoadingNotifications
+              ? Center(child: CircularProgressIndicator(color: darkOrange))
+              : notifications.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.notifications_none,
+                            size: 70,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            'Tidak Ada Notifikasi',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  fontSize: 18,
                                 ),
-                                const SizedBox(height: 14),
-                                Text(
-                                  'No Notifications',
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                        fontSize: 18,
-                                      ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Notifikasi akan muncul di sini saat tersedia.',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  fontSize: 12,
                                 ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Notifications will appear here when available.',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                        fontSize: 12,
-                                      ),
-                                ),
-                              ],
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(14),
+                      itemCount: notifications.length,
+                      itemBuilder: (context, index) {
+                        final notification = notifications[index];
+                        IconData icon;
+                        Color iconColor = darkOrange;
+                        switch (notification['type']) {
+                          case 'chat':
+                            icon = Icons.message;
+                            break;
+                          case 'seller':
+                            icon = Icons.store;
+                            break;
+                          case 'pengguna':
+                            icon = Icons.person;
+                            break;
+                          case 'khusus':
+                            icon = Icons.star;
+                            break;
+                          default:
+                            icon = Icons.info;
+                        }
+                        if (notification['status'] == 'draft' || notification['read'] == true) {
+                          iconColor = Theme.of(context).colorScheme.onSurface.withOpacity(0.5);
+                        }
+
+                        return Card(
+                          color: Theme.of(context).colorScheme.surface,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(10),
+                            leading: CircleAvatar(
+                              backgroundColor: Theme.of(context).colorScheme.background,
+                              child: Icon(
+                                icon,
+                                color: iconColor,
+                                size: 20,
+                              ),
                             ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(14),
-                            itemCount: notifications.length,
-                            itemBuilder: (context, index) {
-                              final notification = notifications[index];
-                              return Card(
-                                color: Theme.of(context).colorScheme.surface,
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.all(10),
-                                  leading: CircleAvatar(
-                                    backgroundColor: Theme.of(context).colorScheme.background,
-                                    child: Icon(
-                                      notification['type'] == 'promo'
-                                          ? Icons.local_offer
-                                          : notification['type'] == 'chat'
-                                              ? Icons.message
-                                              : Icons.info,
-                                      color: darkOrange,
-                                      size: 20,
-                                    ),
+                            title: Text(
+                              notification['title'],
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                    color: notification['status'] == 'draft' || notification['read'] == true
+                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.5)
+                                        : Theme.of(context).colorScheme.onSurface,
                                   ),
-                                  title: Text(
-                                    notification['title'],
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 3),
+                                Text(
+                                  notification['description'],
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                        fontSize: 11,
+                                      ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  notification['time'],
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                        fontSize: 11,
+                                      ),
+                                ),
+                                if (notification['status'] != 'terkirim')
+                                  Text(
+                                    'Status: ${notification['status']}',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: notification['status'] == 'terjadwal' ? Colors.blue : Colors.grey,
+                                          fontSize: 10,
                                         ),
                                   ),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        notification['description'],
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                              fontSize: 11,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        notification['time'],
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                                              fontSize: 11,
-                                            ),
-                                      ),
-                                    ],
+                              ],
+                            ),
+                            trailing: notification['read'] == true
+                                ? Icon(Icons.check_circle, color: Colors.green, size: 20)
+                                : IconButton(
+                                    icon: Icon(Icons.circle, color: Colors.blue, size: 20),
+                                    onPressed: () async {
+                                      final result = await apiService.markNotificationAsRead(notification['id']);
+                                      if (result['success']) {
+                                        setState(() {
+                                          notifications[index]['read'] = true;
+                                        });
+                                        showFloatingNotification('Notifikasi ditandai sebagai dibaca.');
+                                      } else {
+                                        showFloatingNotification(result['message']);
+                                        if (result['navigateToLogin'] == true) {
+                                          Navigator.pushReplacementNamed(context, '/login');
+                                        }
+                                      }
+                                    },
                                   ),
-                                  onTap: () {},
-                                ),
-                              );
+                            onTap: () {
+                              switch (notification['type']) {
+                                case 'chat':
+                                  Navigator.pushNamed(context, '/chat', arguments: {
+                                    'chat_id': notification['chat_id'] ?? 0,
+                                    'seller_id': notification['seller_id'] ?? 0,
+                                    'seller_name': 'Seller', // Fallback nama seller
+                                  });
+                                  break;
+                                case 'khusus':
+                                  showFloatingNotification('Notifikasi khusus: ${notification['description']}');
+                                  break;
+                                default:
+                                  showFloatingNotification('Detail: ${notification['description']}');
+                              }
                             },
                           ),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: IconButton(
-                    icon: Icon(Icons.arrow_back, color: darkOrange, size: 20),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: IconButton(
-                    icon: Icon(Icons.shopping_cart_outlined, color: darkOrange, size: 20),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => Cart()),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
+                        );
+                      },
+                    ),
+
+          // Tab Pesan (ChatList)
+          isLoadingChats
+              ? Center(child: CircularProgressIndicator(color: darkOrange))
+              : chats.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.message,
+                            size: 70,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                          const SizedBox(height: 14),
+                          Text(
+                            'Tidak Ada Pesan',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  fontSize: 18,
+                                ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Mulai percakapan dengan seller di sini.',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  fontSize: 12,
+                                ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(14),
+                      itemCount: chats.length,
+                      itemBuilder: (context, index) {
+                        final chat = chats[index];
+                        return Card(
+                          color: Theme.of(context).colorScheme.surface,
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Theme.of(context).colorScheme.background,
+                              child: Icon(
+                                Icons.store,
+                                color: darkOrange,
+                                size: 20,
+                              ),
+                            ),
+                            title: Text(
+                              chat.sellerName,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                            ),
+                            subtitle: Text(
+                              chat.lastMessage,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                    fontSize: 11,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: Text(
+                              chat.lastMessageTime,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                    fontSize: 11,
+                                  ),
+                            ),
+                            onTap: () {
+                              Navigator.pushNamed(context, '/chat', arguments: {
+                                'chat_id': chat.id,
+                                'seller_id': chat.sellerId,
+                                'seller_name': chat.sellerName,
+                              });
+                            },
+                          ),
+                        );
+                      },
+                    ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home, size: 24),
-            label: 'Home',
+            label: 'Beranda',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.explore, size: 24),
-            label: 'Explore',
+            label: 'Jelajah',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications, size: 24),
-            label: 'Notifications',
+            label: 'Notifikasi',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person, size: 24),
-            label: 'Profile',
+            label: 'Profil',
           ),
         ],
         currentIndex: _selectedIndex,
@@ -260,5 +427,12 @@ class _NotificationState extends State<Notification> {
         showUnselectedLabels: true,
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    _tabController.dispose();
+    super.dispose();
   }
 }

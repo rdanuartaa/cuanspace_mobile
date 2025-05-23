@@ -3,6 +3,7 @@ import '../models/product.dart';
 import '../services/api_service.dart';
 import 'cart.dart'; // Import halaman keranjang
 import 'settings.dart'; // Import halaman pengaturan
+import '/main.dart'; // Import untuk konstanta warna
 
 class ProductDetail extends StatefulWidget {
   final Product product;
@@ -206,6 +207,40 @@ class _ProductDetailState extends State<ProductDetail> {
                               color: Theme.of(context).colorScheme.secondary,
                             ),
                       ),
+                      SizedBox(height: 16),
+
+                      // Tombol Lihat Profil Seller
+                      Center(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (widget.product.sellerId == 0) {
+                              showFloatingNotification('Seller tidak ditemukan');
+                              return;
+                            }
+                            Navigator.pushNamed(
+                              context,
+                              '/seller-profile',
+                              arguments: widget.product.sellerId,
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: darkOrange,
+                            foregroundColor: softWhite,
+                            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Lihat Profil Seller',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                        ),
+                      ),
                       SizedBox(height: 80), // Ruang untuk tombol di bawah
                     ],
                   ),
@@ -288,7 +323,6 @@ class _ProductDetailState extends State<ProductDetail> {
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
-                  // Mengganti ScaffoldMessenger dengan notifikasi melayang
                   showFloatingNotification('Fitur beli langsung belum diimplementasikan.');
                 },
                 style: ElevatedButton.styleFrom(
