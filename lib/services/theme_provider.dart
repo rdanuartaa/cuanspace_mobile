@@ -17,6 +17,7 @@ class ThemeProvider with ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _isDarkMode = prefs.getBool('isDarkMode') ?? false;
       _themeMode = _isDarkMode ? ThemeMode.dark : ThemeMode.light;
+      print('Loaded theme: isDarkMode=$_isDarkMode');
       notifyListeners();
     } catch (e) {
       print('Error loading theme: $e');
@@ -29,6 +30,7 @@ class ThemeProvider with ChangeNotifier {
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isDarkMode', _isDarkMode);
+      print('Toggled theme: isDarkMode=$_isDarkMode');
       notifyListeners();
     } catch (e) {
       onError?.call('Gagal mengubah tema: $e');

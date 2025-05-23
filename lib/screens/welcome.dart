@@ -26,17 +26,8 @@ class _WelcomeState extends State<Welcome> with SingleTickerProviderStateMixin {
     );
 
     _controller.forward();
-
-    _checkLoginStatus();
   }
 
-  Future<void> _checkLoginStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-    if (token != null) {
-      Navigator.pushReplacementNamed(context, '/splash');
-    }
-  }
 
   @override
   void dispose() {

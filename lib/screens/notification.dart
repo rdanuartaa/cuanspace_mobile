@@ -9,7 +9,7 @@ class Notification extends StatefulWidget {
 }
 
 class _NotificationState extends State<Notification> {
-  int _selectedIndex = 3;
+  int _selectedIndex = 2;
   List<dynamic> notifications = [];
   bool isLoading = true;
   final ApiService apiService = ApiService();
@@ -36,6 +36,7 @@ class _NotificationState extends State<Notification> {
               message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 12,
                   ),
               textAlign: TextAlign.center,
             ),
@@ -90,9 +91,9 @@ class _NotificationState extends State<Notification> {
         Navigator.pushNamed(context, '/explore');
         break;
       case 2:
-        Navigator.pushNamed(context, '/profile');
         break;
       case 3:
+        Navigator.pushNamed(context, '/profile');
         break;
     }
   }
@@ -100,108 +101,132 @@ class _NotificationState extends State<Notification> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          isLoading
-              ? Center(child: CircularProgressIndicator(color: darkOrange))
-              : notifications.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.notifications_none,
-                            size: 80,
-                            color: lightGrey,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No Notifications',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  color: lightGrey,
-                                ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Notifications will appear here when available.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: lightGrey,
-                                ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: notifications.length,
-                      itemBuilder: (context, index) {
-                        final notification = notifications[index];
-                        return Card(
-                          color: Theme.of(context).colorScheme.surface,
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.all(12),
-                            leading: CircleAvatar(
-                              backgroundColor: lightGrey,
-                              child: Icon(
-                                notification['type'] == 'promo'
-                                    ? Icons.local_offer
-                                    : notification['type'] == 'chat'
-                                        ? Icons.message
-                                        : Icons.info,
-                                color: darkOrange,
-                              ),
-                            ),
-                            title: Text(
-                              notification['title'],
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+            decoration: const BoxDecoration(
+              color: Color.fromARGB(255, 255, 255, 255), // warna biru
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                isLoading
+                    ? Center(child: CircularProgressIndicator(color: darkOrange))
+                    : notifications.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const SizedBox(height: 4),
+                                Icon(
+                                  Icons.notifications_none,
+                                  size: 70,
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                ),
+                                const SizedBox(height: 14),
                                 Text(
-                                  notification['description'],
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  'No Notifications',
+                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                        fontSize: 18,
                                       ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 6),
                                 Text(
-                                  notification['time'],
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  'Notifications will appear here when available.',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                        fontSize: 12,
                                       ),
                                 ),
                               ],
                             ),
-                            onTap: () {},
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(14),
+                            itemCount: notifications.length,
+                            itemBuilder: (context, index) {
+                              final notification = notifications[index];
+                              return Card(
+                                color: Theme.of(context).colorScheme.surface,
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.all(10),
+                                  leading: CircleAvatar(
+                                    backgroundColor: Theme.of(context).colorScheme.background,
+                                    child: Icon(
+                                      notification['type'] == 'promo'
+                                          ? Icons.local_offer
+                                          : notification['type'] == 'chat'
+                                              ? Icons.message
+                                              : Icons.info,
+                                      color: darkOrange,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  title: Text(
+                                    notification['title'],
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                        ),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        notification['description'],
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                              fontSize: 11,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        notification['time'],
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                              fontSize: 11,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  onTap: () {},
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-          Positioned(
-            top: 10,
-            left: 10,
-            child: IconButton(
-              icon: Icon(Icons.arrow_back, color: darkOrange),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-          ),
-          Positioned(
-            top: 10,
-            right: 10,
-            child: IconButton(
-              icon: Icon(Icons.shopping_cart_outlined, color: darkOrange),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Cart()),
-                );
-              },
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: IconButton(
+                    icon: Icon(Icons.arrow_back, color: darkOrange, size: 20),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    icon: Icon(Icons.shopping_cart_outlined, color: darkOrange, size: 20),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => Cart()),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -209,33 +234,29 @@ class _NotificationState extends State<Notification> {
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home, size: 28),
+            icon: Icon(Icons.home, size: 24),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.explore, size: 28),
+            icon: Icon(Icons.explore, size: 24),
             label: 'Explore',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person, size: 28),
-            label: 'Profile',
+            icon: Icon(Icons.notifications, size: 24),
+            label: 'Notifications',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications, size: 28),
-            label: 'Notifications',
+            icon: Icon(Icons.person, size: 24),
+            label: 'Profile',
           ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: darkOrange,
-        unselectedItemColor: pureBlack,
-        selectedLabelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-        unselectedLabelStyle: Theme.of(context).textTheme.bodyMedium,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurface,
         backgroundColor: Theme.of(context).colorScheme.surface,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
-        elevation: 8,
+        elevation: 4,
         showUnselectedLabels: true,
       ),
     );
