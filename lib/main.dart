@@ -24,7 +24,8 @@ import 'models/product.dart';
 const darkOrange = Color(0xFFF46A24);   // Orange gelap
 const pureBlack = Color(0xFF201A1A);    // Hitam solid
 const softWhite = Color(0xFFFFFFFF);    // Putih
-const lightGrey = Color(0xFFEDEDED);    // Abu terang
+const lightGrey = Color(0xFFEDEDED);    // Abu terang untuk tema terang
+const darkGrey = Color(0xFF2A2A2A);     // Abu gelap untuk tema gelap
 
 void main() {
   runApp(
@@ -52,12 +53,12 @@ class MyApp extends StatelessWidget {
           onSurface: pureBlack,
         ),
         textTheme: TextTheme(
-          bodyMedium: TextStyle(fontSize: 16, color: pureBlack, fontFamily: 'Poppins'),
-          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: darkOrange, fontFamily: 'Poppins'),
+          bodyMedium: TextStyle(fontSize: 14, color: pureBlack, fontFamily: 'Poppins'),
+          headlineSmall: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: darkOrange, fontFamily: 'Poppins'),
         ),
         appBarTheme: AppBarTheme(
           backgroundColor: darkOrange,
-          titleTextStyle: TextStyle(color: softWhite, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          titleTextStyle: TextStyle(color: softWhite, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
           iconTheme: IconThemeData(color: softWhite),
           elevation: 0,
         ),
@@ -68,7 +69,7 @@ class MyApp extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            textStyle: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+            textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
@@ -88,6 +89,13 @@ class MyApp extends StatelessWidget {
           ),
           labelStyle: TextStyle(color: pureBlack),
         ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          selectedItemColor: darkOrange,
+          unselectedItemColor: pureBlack,
+          selectedLabelStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+          unselectedLabelStyle: TextStyle(fontSize: 10),
+          backgroundColor: lightGrey,
+        ),
       ),
       darkTheme: ThemeData(
         primaryColor: darkOrange,
@@ -96,18 +104,18 @@ class MyApp extends StatelessWidget {
           primary: darkOrange,
           secondary: lightGrey,
           error: Colors.red[700]!,
-          background: pureBlack,
+          background: darkGrey,
           onPrimary: softWhite,
-          surface: pureBlack,
+          surface: darkGrey,
           onSurface: softWhite,
         ),
         textTheme: TextTheme(
-          bodyMedium: TextStyle(fontSize: 16, color: softWhite, fontFamily: 'Poppins'),
-          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: darkOrange, fontFamily: 'Poppins'),
+          bodyMedium: TextStyle(fontSize: 14, color: softWhite, fontFamily: 'Poppins'),
+          headlineSmall: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: darkOrange, fontFamily: 'Poppins'),
         ),
         appBarTheme: AppBarTheme(
           backgroundColor: darkOrange,
-          titleTextStyle: TextStyle(color: softWhite, fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          titleTextStyle: TextStyle(color: softWhite, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
           iconTheme: IconThemeData(color: softWhite),
           elevation: 0,
         ),
@@ -118,12 +126,12 @@ class MyApp extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            textStyle: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+            textStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: pureBlack,
+          fillColor: darkGrey,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: darkOrange, width: 1.5),
@@ -138,9 +146,16 @@ class MyApp extends StatelessWidget {
           ),
           labelStyle: TextStyle(color: softWhite),
         ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          selectedItemColor: darkOrange,
+          unselectedItemColor: softWhite,
+          selectedLabelStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+          unselectedLabelStyle: TextStyle(fontSize: 10),
+          backgroundColor: darkGrey,
+        ),
       ),
       themeMode: Provider.of<ThemeProvider>(context).themeMode,
-      initialRoute: '/welcome',
+      initialRoute: '/splash',
       routes: {
         '/welcome': (context) => Welcome(),
         '/login': (context) => Login(),

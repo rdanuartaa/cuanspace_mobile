@@ -48,6 +48,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
               message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 12,
                   ),
               textAlign: TextAlign.center,
             ),
@@ -112,6 +113,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: darkOrange,
                     fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
             ),
           ),
@@ -132,10 +134,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
         Navigator.pushNamed(context, '/explore');
         break;
       case 2:
-        Navigator.pushNamed(context, '/profile');
+        Navigator.pushNamed(context, '/notification');
         break;
       case 3:
-        Navigator.pushNamed(context, '/notification');
+        Navigator.pushNamed(context, '/profile');
         break;
     }
   }
@@ -163,212 +165,232 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: isLoading
-          ? Center(child: CircularProgressIndicator(color: darkOrange))
-          : CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    child: Row(
-                      children: [
-                        Text(
-                          'Cuan Space',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            decoration: const InputDecoration(
-                              hintText: 'Search digital products...',
-                            ),
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: Icon(Icons.notifications, color: darkOrange),
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/notification');
-                          },
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.shopping_cart_outlined, color: darkOrange),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => Cart()),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Digital Product Categories',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        const SizedBox(height: 12),
-                        kategoris.isEmpty
-                            ? Text(
-                                'No categories available.',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: lightGrey,
-                                    ),
-                              )
-                            : SizedBox(
-                                height: 44,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: kategoris.length,
-                                  itemBuilder: (context, index) {
-                                    final isSelected = _selectedCategoryIndex == index;
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 12),
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            if (isSelected) {
-                                              _selectedCategoryIndex = null;
-                                            } else {
-                                              _selectedCategoryIndex = index;
-                                            }
-                                          });
-                                        },
-                                        child: AnimatedContainer(
-                                          duration: const Duration(milliseconds: 200),
-                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: isSelected ? darkOrange.withOpacity(0.1) : lightGrey,
-                                            borderRadius: BorderRadius.circular(20),
-                                            border: Border.all(
-                                              color: isSelected ? darkOrange : lightGrey,
-                                              width: isSelected ? 2 : 1,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Text(
-                                                kategoris[index].namaKategori,
-                                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                                      fontWeight: FontWeight.w600,
-                                                      fontSize: 16,
-                                                      color: isSelected ? darkOrange : Theme.of(context).colorScheme.onSurface,
-                                                    ),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.arrow_drop_down,
-                                                size: 20,
-                                                color: isSelected ? darkOrange : Theme.of(context).colorScheme.onSurface,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Popular Digital Products',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                    ),
-                  ),
-                ),
-                filteredProducts.isEmpty
-                    ? SliverToBoxAdapter(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+            decoration: const BoxDecoration(
+              color: Color.fromARGB(0, 255, 255, 255), 
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+            ),
+          ),
+          Expanded(
+            child: isLoading
+                ? Center(child: CircularProgressIndicator(color: darkOrange))
+                : CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Text(
-                            'No products available.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: lightGrey,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Cuan Space',
+                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: TextField(
+                                  controller: _searchController,
+                                  decoration: const InputDecoration(
+                                    hintText: 'Search digital products...',
+                                  ),
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
                                 ),
-                          ),
-                        ),
-                      )
-                    : SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                        sliver: SliverGrid(
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.7,
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) {
-                              final product = filteredProducts[index];
-                              return ProductCard(product: product);
-                            },
-                            childCount: filteredProducts.length,
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: Icon(Icons.notifications, color: darkOrange, size: 20),
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/notification');
+                                },
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.shopping_cart_outlined, color: darkOrange, size: 20),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => Cart()),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                const SliverToBoxAdapter(child: SizedBox(height: 16)),
-              ],
-            ),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Digital Product Categories',
+                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              const SizedBox(height: 10),
+                              kategoris.isEmpty
+                                  ? Text(
+                                      'No categories available.',
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                            fontSize: 12,
+                                          ),
+                                    )
+                                  : SizedBox(
+                                      height: 40,
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: kategoris.length,
+                                        itemBuilder: (context, index) {
+                                          final isSelected = _selectedCategoryIndex == index;
+                                          return Padding(
+                                            padding: const EdgeInsets.only(right: 10),
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                setState(() {
+                                                  if (isSelected) {
+                                                    _selectedCategoryIndex = null;
+                                                  } else {
+                                                    _selectedCategoryIndex = index;
+                                                  }
+                                                });
+                                              },
+                                              child: AnimatedContainer(
+                                                duration: const Duration(milliseconds: 200),
+                                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                                decoration: BoxDecoration(
+                                                  color: isSelected ? darkOrange.withOpacity(0.1) : Theme.of(context).colorScheme.surface,
+                                                  borderRadius: BorderRadius.circular(18),
+                                                  border: Border.all(
+                                                    color: isSelected ? darkOrange : Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                                                    width: isSelected ? 2 : 1,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Text(
+                                                      kategoris[index].namaKategori,
+                                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                            fontWeight: FontWeight.w600,
+                                                            fontSize: 12,
+                                                            color: isSelected
+                                                                ? darkOrange
+                                                                : Theme.of(context).colorScheme.onSurface,
+                                                          ),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Icon(
+                                                      Icons.arrow_drop_down,
+                                                      size: 18,
+                                                      color: isSelected
+                                                          ? darkOrange
+                                                          : Theme.of(context).colorScheme.onSurface,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Popular Digital Products',
+                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              const SizedBox(height: 10),
+                            ],
+                          ),
+                        ),
+                      ),
+                      filteredProducts.isEmpty
+                          ? SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                child: Text(
+                                  'No products available.',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                        fontSize: 12,
+                                      ),
+                                ),
+                              ),
+                            )
+                          : SliverPadding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                              sliver: SliverGrid(
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 14,
+                                  mainAxisSpacing: 14,
+                                  childAspectRatio: 0.7,
+                                ),
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) {
+                                    final product = filteredProducts[index];
+                                    return ProductCard(product: product);
+                                  },
+                                  childCount: filteredProducts.length,
+                                ),
+                              ),
+                            ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                    ],
+                  ),
+          ),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home, size: 28),
+            icon: Icon(Icons.home, size: 24),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.explore, size: 28),
+            icon: Icon(Icons.explore, size: 24),
             label: 'Explore',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person, size: 28),
-            label: 'Profile',
+            icon: Icon(Icons.notifications, size: 24),
+            label: 'Notifications',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications, size: 28),
-            label: 'Notifications',
+            icon: Icon(Icons.person, size: 24),
+            label: 'Profile',
           ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: darkOrange,
-        unselectedItemColor: pureBlack,
-        selectedLabelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-        unselectedLabelStyle: Theme.of(context).textTheme.bodyMedium,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurface,
         backgroundColor: Theme.of(context).colorScheme.surface,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
-        elevation: 8,
+        elevation: 4,
         showUnselectedLabels: true,
       ),
     );
@@ -438,25 +460,25 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
             elevation: _isHovered ? 6 : 2,
             shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                     child: Image.network(
                       '${ApiService.storageUrl}/${widget.product.thumbnail}',
                       fit: BoxFit.cover,
                       width: double.infinity,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          color: lightGrey,
+                          color: Theme.of(context).colorScheme.background,
                           child: Center(
                             child: Icon(
                               Icons.broken_image,
-                              size: 60,
+                              size: 50,
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
@@ -466,7 +488,7 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -474,25 +496,26 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
                         widget.product.name,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w700,
-                              fontSize: 16,
+                              fontSize: 13,
                             ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         'Rp ${widget.product.price.toStringAsFixed(0)}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: darkOrange,
                               fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                              fontSize: 12,
                             ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       Text(
                         widget.product.description,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              fontSize: 11,
                             ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,

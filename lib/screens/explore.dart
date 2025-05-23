@@ -22,10 +22,10 @@ class _ExploreState extends State<Explore> {
       case 1:
         break;
       case 2:
-        Navigator.pushNamed(context, '/profile');
+        Navigator.pushNamed(context, '/notification');
         break;
       case 3:
-        Navigator.pushNamed(context, '/notification');
+        Navigator.pushNamed(context, '/profile');
         break;
     }
   }
@@ -33,64 +33,106 @@ class _ExploreState extends State<Explore> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+            decoration: const BoxDecoration(
+              color: Color.fromARGB(255, 255, 255, 255), // warna biru
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Stack(
               children: [
-                const SizedBox(height: 60),
-                Expanded(
-                  child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 0.75,
-                    ),
-                    itemCount: 8,
-                    itemBuilder: (context, index) {
-                      return Card(
-                        color: Theme.of(context).colorScheme.surface,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                                child: Container(
-                                  color: lightGrey,
-                                  child: Icon(
-                                    Icons.fastfood,
-                                    size: 80,
-                                    color: darkOrange,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(12),
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: GridView.builder(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 14,
+                            mainAxisSpacing: 14,
+                            childAspectRatio: 0.75,
+                          ),
+                          itemCount: 8,
+                          itemBuilder: (context, index) {
+                            return Card(
+                              color: Theme.of(context).colorScheme.surface,
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Text(
-                                    'Category ${index + 1}',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          fontWeight: FontWeight.w600,
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                                      child: Container(
+                                        color: Theme.of(context).colorScheme.background,
+                                        child: Icon(
+                                          Icons.fastfood,
+                                          size: 70,
+                                          color: darkOrange,
                                         ),
+                                      ),
+                                    ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Explore items',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Category ${index + 1}',
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                              ),
                                         ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          'Explore items',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                                fontSize: 11,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: IconButton(
+                    icon: Icon(Icons.arrow_back, color: darkOrange, size: 20),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    icon: Icon(Icons.shopping_cart_outlined, color: darkOrange, size: 20),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => Cart()),
                       );
                     },
                   ),
@@ -98,61 +140,34 @@ class _ExploreState extends State<Explore> {
               ],
             ),
           ),
-          Positioned(
-            top: 10,
-            left: 10,
-            child: IconButton(
-              icon: Icon(Icons.arrow_back, color: darkOrange),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-          ),
-          Positioned(
-            top: 10,
-            right: 10,
-            child: IconButton(
-              icon: Icon(Icons.shopping_cart_outlined, color: darkOrange),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Cart()),
-                );
-              },
-            ),
-          ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home, size: 28),
+            icon: Icon(Icons.home, size: 24),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.explore, size: 28),
+            icon: Icon(Icons.explore, size: 24),
             label: 'Explore',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person, size: 28),
-            label: 'Profile',
+            icon: Icon(Icons.notifications, size: 24),
+            label: 'Notifications',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications, size: 28),
-            label: 'Notifications',
+            icon: Icon(Icons.person, size: 24),
+            label: 'Profile',
           ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: darkOrange,
-        unselectedItemColor: pureBlack,
-        selectedLabelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-        unselectedLabelStyle: Theme.of(context).textTheme.bodyMedium,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurface,
         backgroundColor: Theme.of(context).colorScheme.surface,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
-        elevation: 8,
+        elevation: 4,
         showUnselectedLabels: true,
       ),
     );
