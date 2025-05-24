@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../models/chat.dart';
-import 'cart.dart';
-import '/main.dart'; // Import main.dart untuk konstanta warna
+import '/main.dart';
 
 class Notification extends StatefulWidget {
   @override
@@ -203,7 +203,7 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                         final notification = notifications[index];
                         IconData icon;
                         Color iconColor = darkOrange;
-                        switch (notification['type']) {
+                        switch (notification['penerima']) {
                           case 'chat':
                             icon = Icons.message;
                             break;
@@ -236,7 +236,7 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                               ),
                             ),
                             title: Text(
-                              notification['title'],
+                              notification['judul'],
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13,
@@ -250,7 +250,7 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                               children: [
                                 const SizedBox(height: 3),
                                 Text(
-                                  notification['description'],
+                                  notification['pesan'],
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                         fontSize: 11,
@@ -258,7 +258,9 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
-                                  notification['time'],
+                                  notification['created_at'] != null
+                                      ? DateFormat('dd MMM yyyy, HH:mm').format(DateTime.parse(notification['created_at']))
+                                      : 'Waktu tidak tersedia',
                                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                         color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                         fontSize: 11,
@@ -268,7 +270,7 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                                   Text(
                                     'Status: ${notification['status']}',
                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: notification['status'] == 'terjadwal' ? Colors.blue : Colors.grey,
+                                          color: Colors.grey,
                                           fontSize: 10,
                                         ),
                                   ),
@@ -282,7 +284,7 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                                       final result = await apiService.markNotificationAsRead(notification['id']);
                                       if (result['success']) {
                                         setState(() {
-                                          notifications[index]['read'] = true;
+                                          notification['read'] = true;
                                         });
                                         showFloatingNotification('Notifikasi ditandai sebagai dibaca.');
                                       } else {
@@ -294,19 +296,19 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                                     },
                                   ),
                             onTap: () {
-                              switch (notification['type']) {
+                              switch (notification['penerima']) {
                                 case 'chat':
                                   Navigator.pushNamed(context, '/chat', arguments: {
                                     'chat_id': notification['chat_id'] ?? 0,
                                     'seller_id': notification['seller_id'] ?? 0,
-                                    'seller_name': 'Seller', // Fallback nama seller
+                                    'seller_name': 'Seller',
                                   });
                                   break;
                                 case 'khusus':
-                                  showFloatingNotification('Notifikasi khusus: ${notification['description']}');
+                                  showFloatingNotification('Notifikasi khusus: ${notification['pesan']}');
                                   break;
                                 default:
-                                  showFloatingNotification('Detail: ${notification['description']}');
+                                  showFloatingNotification('Detail: ${notification['pesan']}');
                               }
                             },
                           ),
@@ -379,7 +381,7 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                               overflow: TextOverflow.ellipsis,
                             ),
                             trailing: Text(
-                              chat.lastMessageTime,
+                              DateFormat('dd MMM yyyy, HH:mm').format(DateTime.parse(chat.lastMessageTime)),
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                                     fontSize: 11,

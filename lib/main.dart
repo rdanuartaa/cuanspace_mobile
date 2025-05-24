@@ -159,7 +159,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       themeMode: Provider.of<ThemeProvider>(context).themeMode,
-      initialRoute: '/splash',
+      initialRoute: '/welcome',
       routes: {
         '/welcome': (context) => Welcome(),
         '/login': (context) => Login(),
