@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Tambahkan untuk format waktu
 import '../models/massage.dart';
 import '../services/api_service.dart';
 import '/main.dart';
+import 'dart:async'; // Tambahkan untuk Timer
 
 class ChatScreen extends StatefulWidget {
   @override
@@ -15,7 +17,8 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   int? chatId;
   int? sellerId;
-  String? sellerName; // Ubah dari late ke nullable
+  String? sellerName;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
@@ -32,17 +35,26 @@ class _ChatScreenState extends State<ChatScreen> {
         sellerName = 'Seller';
       }
       fetchMessages();
+      _startPolling();
     });
   }
 
-  Future<void> fetchMessages() async {
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(Duration(seconds: 10), (timer) {
+      fetchMessages(silent: true);
+    });
+  }
+
+  Future<void> fetchMessages({bool silent = false}) async {
     if (chatId == 0) {
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('ID percakapan tidak valid')),
-      );
+      if (!silent) {
+        setState(() {
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ID percakapan tidak valid')),
+        );
+      }
       return;
     }
 
@@ -51,27 +63,31 @@ class _ChatScreenState extends State<ChatScreen> {
       if (result['success']) {
         setState(() {
           messages = result['data'];
-          isLoading = false;
+          if (!silent) isLoading = false;
         });
       } else {
-        setState(() {
-          isLoading = false;
-        });
-        if (result['navigateToLogin'] == true) {
-          Navigator.pushReplacementNamed(context, '/login');
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(result['message'] ?? 'Gagal memuat pesan')),
-          );
+        if (!silent) {
+          setState(() {
+            isLoading = false;
+          });
+          if (result['navigateToLogin'] == true) {
+            Navigator.pushReplacementNamed(context, '/login');
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(result['message'] ?? 'Gagal memuat pesan')),
+            );
+          }
         }
       }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat pesan: $e')),
-      );
+      if (!silent) {
+        setState(() {
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memuat pesan: $e')),
+        );
+      }
     }
   }
 
@@ -155,7 +171,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    message.createdAt,
+                                    DateFormat('dd MMM yyyy, HH:mm').format(DateTime.parse(message.createdAt)),
                                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                           fontSize: 10,
                                           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
@@ -201,6 +217,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     _messageController.dispose();
     super.dispose();
   }

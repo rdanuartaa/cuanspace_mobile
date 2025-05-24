@@ -10,11 +10,11 @@ import '../models/chat.dart';
 
 
 class ApiService {
-// static const String baseUrl = 'http://127.0.0.1:8000/api';
-// static const String storageUrl = 'http://127.0.0.1:8000/storage';
+static const String baseUrl = 'http://127.0.0.1:8000/api';
+static const String storageUrl = 'http://127.0.0.1:8000/storage';
   //static const String baseUrl = 'http://10.0.2.2/api';
-  static const String baseUrl = 'http://192.168.137.1:8000/api'; 
-  static const String storageUrl = 'http://192.168.137.1:8000/storage';
+  // static const String baseUrl = 'http://192.168.137.1:8000/api'; 
+  // static const String storageUrl = 'http://192.168.137.1:8000/storage';
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       var response = await http.post(
@@ -540,7 +540,7 @@ Future<Map<String, dynamic>> fetchUserProfile() async {
   }
 }
 
-  Future<Map<String, dynamic>> fetchNotifications({int page = 1}) async {
+ Future<Map<String, dynamic>> fetchNotifications({int page = 1}) async {
   try {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
@@ -577,19 +577,19 @@ Future<Map<String, dynamic>> fetchUserProfile() async {
       List<dynamic> notifications = (responseData['data'] as List).map((item) {
         return {
           'id': item['id'],
-          'title': item['judul'],
-          'description': item['pesan'],
-          'type': item['pelaku'],
+          'judul': item['judul'],
+          'pesan': item['pesan'],
+          'penerima': item['penerima'],
           'status': item['status'],
-          'time': item['jadwal_kirim'],
           'read': item['read'] ?? false,
           'chat_id': item['chat_id'],
           'seller_id': item['seller_id'],
+          'created_at': item['created_at'],
         };
       }).where((item) {
-        return item['type'] == 'semua' ||
-            item['type'] == (isSeller ? 'seller' : 'pengguna') ||
-            (item['type'] == 'khusus');
+        return item['penerima'] == 'semua' ||
+            item['penerima'] == (isSeller ? 'seller' : 'pengguna') ||
+            (item['penerima'] == 'khusus');
       }).toList();
       return {
         'success': true,
