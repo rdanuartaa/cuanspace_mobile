@@ -6,11 +6,14 @@ import '../models/chat.dart';
 import '/main.dart';
 
 class Notification extends StatefulWidget {
+  const Notification({super.key});
+
   @override
   _NotificationState createState() => _NotificationState();
 }
 
-class _NotificationState extends State<Notification> with SingleTickerProviderStateMixin {
+class _NotificationState extends State<Notification>
+    with SingleTickerProviderStateMixin {
   int _selectedIndex = 2;
   List<dynamic> notifications = [];
   List<Chat> chats = [];
@@ -148,14 +151,15 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Notifikasi & Pesan', style: Theme.of(context).textTheme.titleLarge),
+        title: Text('Notifikasi & Pesan',
+            style: Theme.of(context).textTheme.titleLarge),
         backgroundColor: darkOrange,
         bottom: TabBar(
           controller: _tabController,
           labelColor: softWhite,
           unselectedLabelColor: softWhite.withOpacity(0.7),
           indicatorColor: softWhite,
-          tabs: [
+          tabs: const [
             Tab(text: 'Notifikasi'),
             Tab(text: 'Pesan'),
           ],
@@ -175,21 +179,36 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                           Icon(
                             Icons.notifications_none,
                             size: 70,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.7),
                           ),
                           const SizedBox(height: 14),
                           Text(
                             'Tidak Ada Notifikasi',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.7),
                                   fontSize: 18,
                                 ),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             'Notifikasi akan muncul di sini saat tersedia.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.7),
                                   fontSize: 12,
                                 ),
                           ),
@@ -219,8 +238,12 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                           default:
                             icon = Icons.info;
                         }
-                        if (notification['status'] == 'draft' || notification['read'] == true) {
-                          iconColor = Theme.of(context).colorScheme.onSurface.withOpacity(0.5);
+                        if (notification['status'] == 'draft' ||
+                            notification['read'] == true) {
+                          iconColor = Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.5);
                         }
 
                         return Card(
@@ -228,7 +251,8 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                           child: ListTile(
                             contentPadding: const EdgeInsets.all(10),
                             leading: CircleAvatar(
-                              backgroundColor: Theme.of(context).colorScheme.background,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.background,
                               child: Icon(
                                 icon,
                                 color: iconColor,
@@ -237,12 +261,21 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                             ),
                             title: Text(
                               notification['judul'],
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13,
-                                    color: notification['status'] == 'draft' || notification['read'] == true
-                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.5)
-                                        : Theme.of(context).colorScheme.onSurface,
+                                    color: notification['status'] == 'draft' ||
+                                            notification['read'] == true
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.5)
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurface,
                                   ),
                             ),
                             subtitle: Column(
@@ -251,25 +284,42 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                                 const SizedBox(height: 3),
                                 Text(
                                   notification['pesan'],
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.7),
                                         fontSize: 11,
                                       ),
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
                                   notification['created_at'] != null
-                                      ? DateFormat('dd MMM yyyy, HH:mm').format(DateTime.parse(notification['created_at']))
+                                      ? DateFormat('dd MMM yyyy, HH:mm').format(
+                                          DateTime.parse(
+                                              notification['created_at']))
                                       : 'Waktu tidak tersedia',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.7),
                                         fontSize: 11,
                                       ),
                                 ),
                                 if (notification['status'] != 'terkirim')
                                   Text(
                                     'Status: ${notification['status']}',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
                                           color: Colors.grey,
                                           fontSize: 10,
                                         ),
@@ -277,20 +327,27 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                               ],
                             ),
                             trailing: notification['read'] == true
-                                ? Icon(Icons.check_circle, color: Colors.green, size: 20)
+                                ? Icon(Icons.check_circle,
+                                    color: Colors.green, size: 20)
                                 : IconButton(
-                                    icon: Icon(Icons.circle, color: Colors.blue, size: 20),
+                                    icon: Icon(Icons.circle,
+                                        color: Colors.blue, size: 20),
                                     onPressed: () async {
-                                      final result = await apiService.markNotificationAsRead(notification['id']);
+                                      final result = await apiService
+                                          .markNotificationAsRead(
+                                              notification['id']);
                                       if (result['success']) {
                                         setState(() {
                                           notification['read'] = true;
                                         });
-                                        showFloatingNotification('Notifikasi ditandai sebagai dibaca.');
+                                        showFloatingNotification(
+                                            'Notifikasi ditandai sebagai dibaca.');
                                       } else {
-                                        showFloatingNotification(result['message']);
+                                        showFloatingNotification(
+                                            result['message']);
                                         if (result['navigateToLogin'] == true) {
-                                          Navigator.pushReplacementNamed(context, '/login');
+                                          Navigator.pushReplacementNamed(
+                                              context, '/login');
                                         }
                                       }
                                     },
@@ -298,17 +355,21 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                             onTap: () {
                               switch (notification['penerima']) {
                                 case 'chat':
-                                  Navigator.pushNamed(context, '/chat', arguments: {
-                                    'chat_id': notification['chat_id'] ?? 0,
-                                    'seller_id': notification['seller_id'] ?? 0,
-                                    'seller_name': 'Seller',
-                                  });
+                                  Navigator.pushNamed(context, '/chat',
+                                      arguments: {
+                                        'chat_id': notification['chat_id'] ?? 0,
+                                        'seller_id':
+                                            notification['seller_id'] ?? 0,
+                                        'seller_name': 'Seller',
+                                      });
                                   break;
                                 case 'khusus':
-                                  showFloatingNotification('Notifikasi khusus: ${notification['pesan']}');
+                                  showFloatingNotification(
+                                      'Notifikasi khusus: ${notification['pesan']}');
                                   break;
                                 default:
-                                  showFloatingNotification('Detail: ${notification['pesan']}');
+                                  showFloatingNotification(
+                                      'Detail: ${notification['pesan']}');
                               }
                             },
                           ),
@@ -327,21 +388,36 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                           Icon(
                             Icons.message,
                             size: 70,
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.7),
                           ),
                           const SizedBox(height: 14),
                           Text(
                             'Tidak Ada Pesan',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.7),
                                   fontSize: 18,
                                 ),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             'Mulai percakapan dengan seller di sini.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.7),
                                   fontSize: 12,
                                 ),
                           ),
@@ -357,7 +433,8 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                           color: Theme.of(context).colorScheme.surface,
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundColor: Theme.of(context).colorScheme.background,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.background,
                               child: Icon(
                                 Icons.store,
                                 color: darkOrange,
@@ -366,24 +443,40 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
                             ),
                             title: Text(
                               chat.sellerName,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13,
                                   ),
                             ),
                             subtitle: Text(
                               chat.lastMessage,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.7),
                                     fontSize: 11,
                                   ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             trailing: Text(
-                              DateFormat('dd MMM yyyy, HH:mm').format(DateTime.parse(chat.lastMessageTime)),
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              DateFormat('dd MMM yyyy, HH:mm')
+                                  .format(DateTime.parse(chat.lastMessageTime)),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.7),
                                     fontSize: 11,
                                   ),
                             ),
@@ -404,19 +497,19 @@ class _NotificationState extends State<Notification> with SingleTickerProviderSt
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home, size: 24),
-            label: 'Beranda',
+            label: 'Beranda', // Diubah dari 'Home'
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.explore, size: 24),
-            label: 'Jelajah',
+            label: 'Jelajah', // Diubah dari 'Explore'
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications, size: 24),
-            label: 'Notifikasi',
+            label: 'Notifikasi', // Diubah dari 'Notifications'
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person, size: 24),
-            label: 'Profil',
+            label: 'Profil', // Diubah dari 'Profile'
           ),
         ],
         currentIndex: _selectedIndex,

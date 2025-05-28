@@ -13,6 +13,14 @@ class User {
     this.userDetail,
   });
 
+  // Konstruktor untuk kompatibilitas dengan main.dart
+  User.required({
+    required this.id,
+    required this.name,
+    required this.email,
+    this.userDetail,
+  });
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
