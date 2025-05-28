@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '/services/theme_provider.dart';
+import 'package:cuan_space/services/theme_provider.dart';
 
 class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key});
+
   @override
   _SettingsPageState createState() => _SettingsPageState();
 }
@@ -21,7 +23,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void showFloatingNotification(String message) {
-    OverlayEntry overlayEntry = OverlayEntry(
+    final overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
         top: 50,
         left: 16,
@@ -31,10 +33,11 @@ class _SettingsPageState extends State<SettingsPage> {
           borderRadius: BorderRadius.circular(8),
           elevation: 4,
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium ?? TextStyle(fontSize: 14),
+              style: Theme.of(context).textTheme.bodyMedium ??
+                  const TextStyle(fontSize: 14),
               textAlign: TextAlign.center,
             ),
           ),
@@ -43,7 +46,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     Overlay.of(context).insert(overlayEntry);
-    Future.delayed(Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 3), () {
       overlayEntry.remove();
     });
   }
@@ -55,15 +58,15 @@ class _SettingsPageState extends State<SettingsPage> {
         errorMessage = '';
       });
       final prefs = await SharedPreferences.getInstance();
-      print('Loaded language: ${prefs.getString('language')}');
-      print('Loaded notifications: ${prefs.getBool('notifications')}');
+      debugPrint('Loaded language: ${prefs.getString('language')}');
+      debugPrint('Loaded notifications: ${prefs.getBool('notifications')}');
       setState(() {
         selectedLanguage = prefs.getString('language') ?? 'Indonesia';
         notificationsEnabled = prefs.getBool('notifications') ?? true;
         isLoading = false;
       });
     } catch (e) {
-      print('Error loading settings: $e');
+      debugPrint('Error loading settings: $e');
       setState(() {
         isLoading = false;
         errorMessage = 'Terjadi kesalahan: $e';
@@ -86,7 +89,7 @@ class _SettingsPageState extends State<SettingsPage> {
       });
       showFloatingNotification('Pengaturan berhasil disimpan');
     } catch (e) {
-      print('Error saving settings: $e');
+      debugPrint('Error saving settings: $e');
       setState(() {
         isLoading = false;
         errorMessage = 'Terjadi kesalahan: $e';
@@ -105,7 +108,7 @@ class _SettingsPageState extends State<SettingsPage> {
         title: Text(
           'Pengaturan',
           style: Theme.of(context).appBarTheme.titleTextStyle ??
-              TextStyle(
+              const TextStyle(
                 color: Colors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -114,19 +117,23 @@ class _SettingsPageState extends State<SettingsPage> {
         centerTitle: true,
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
+          ? Center(
+              child: CircularProgressIndicator(
+                  color: Theme.of(context).colorScheme.primary))
           : Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   ListTile(
-                    leading: Icon(Icons.language, color: Theme.of(context).colorScheme.primary),
+                    leading: Icon(Icons.language,
+                        color: Theme.of(context).colorScheme.primary),
                     title: Text(
                       'Bahasa',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ) ??
-                          TextStyle(fontWeight: FontWeight.w500),
+                      style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w500) ??
+                          const TextStyle(fontWeight: FontWeight.w500),
                     ),
                     trailing: DropdownButton<String>(
                       value: selectedLanguage,
@@ -149,13 +156,15 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ),
                   ListTile(
-                    leading: Icon(Icons.notifications, color: Theme.of(context).colorScheme.primary),
+                    leading: Icon(Icons.notifications,
+                        color: Theme.of(context).colorScheme.primary),
                     title: Text(
                       'Notifikasi',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ) ??
-                          TextStyle(fontWeight: FontWeight.w500),
+                      style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w500) ??
+                          const TextStyle(fontWeight: FontWeight.w500),
                     ),
                     trailing: Switch(
                       value: notificationsEnabled,
@@ -169,30 +178,30 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ),
                   ListTile(
-                    leading: Icon(Icons.dark_mode, color: Theme.of(context).colorScheme.primary),
+                    leading: Icon(Icons.dark_mode,
+                        color: Theme.of(context).colorScheme.primary),
                     title: Text(
                       'Mode Gelap',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ) ??
-                          TextStyle(fontWeight: FontWeight.w500),
+                      style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w500) ??
+                          const TextStyle(fontWeight: FontWeight.w500),
                     ),
                     trailing: Switch(
                       value: themeProvider.isDarkMode,
                       activeColor: Theme.of(context).colorScheme.primary,
                       onChanged: (value) {
-                        themeProvider.toggleTheme(value, (error) {
-                          showFloatingNotification(error);
-                        });
+                        themeProvider.toggleTheme(value);
                       },
                     ),
                   ),
                   if (errorMessage.isNotEmpty)
                     Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
                         errorMessage,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: 'Poppins',
                           color: Colors.red,
                         ),

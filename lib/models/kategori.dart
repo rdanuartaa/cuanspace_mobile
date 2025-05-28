@@ -11,9 +11,17 @@ class Kategori {
 
   factory Kategori.fromJson(Map<String, dynamic> json) {
     return Kategori(
-      id: json['id'],
-      namaKategori: json['nama_kategori'],
+      id: json['id'] ?? 0,
+      namaKategori: json['nama_kategori'] ?? 'Unknown Category',
       slug: json['slug'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'nama_kategori': namaKategori,
+      'slug': slug,
+    };
   }
 }

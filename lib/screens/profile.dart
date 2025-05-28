@@ -9,6 +9,8 @@ import 'cart.dart';
 import '/main.dart'; // Import main.dart for color constants
 
 class Profile extends StatefulWidget {
+  const Profile({super.key});
+
   @override
   _ProfileState createState() => _ProfileState();
 }
@@ -101,11 +103,15 @@ class _ProfileState extends State<Profile> {
           backgroundColor: Theme.of(context).colorScheme.surface,
           title: Text(
             'Confirm Logout',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 18),
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(fontSize: 18),
           ),
           content: Text(
             'Are you sure you want to log out of your account?',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
+            style:
+                Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
           ),
           actions: [
             TextButton(
@@ -113,7 +119,10 @@ class _ProfileState extends State<Profile> {
               child: Text(
                 'Cancel',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.7),
                       fontSize: 12,
                     ),
               ),
@@ -130,13 +139,15 @@ class _ProfileState extends State<Profile> {
                     isLoading = false;
                   });
                   navigator.pushReplacementNamed('/login');
-                  showFloatingNotification(result['message'] ?? 'Logout successful.');
+                  showFloatingNotification(
+                      result['message'] ?? 'Logout successful.');
                 } catch (e) {
                   setState(() {
                     isLoading = false;
                   });
                   navigator.pushReplacementNamed('/login');
-                  showFloatingNotification('Logout successful (local session cleared).');
+                  showFloatingNotification(
+                      'Logout successful (local session cleared).');
                 }
               },
               child: Text(
@@ -212,9 +223,12 @@ class _ProfileState extends State<Profile> {
                                   fit: BoxFit.cover,
                                   width: 100,
                                   height: 100,
-                                  headers: _token != null ? {'Authorization': 'Bearer $_token'} : null,
+                                  headers: _token != null
+                                      ? {'Authorization': 'Bearer $_token'}
+                                      : null,
                                   errorBuilder: (context, error, stackTrace) {
-                                    print('Error loading profile photo: $error');
+                                    print(
+                                        'Error loading profile photo: $error');
                                     return Icon(
                                       Icons.person,
                                       size: 60,
@@ -232,16 +246,20 @@ class _ProfileState extends State<Profile> {
                       const SizedBox(height: 14),
                       Text(
                         user?.name ?? 'Loading...',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         user?.email ?? '',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.7),
                               fontSize: 12,
                             ),
                       ),
@@ -255,23 +273,36 @@ class _ProfileState extends State<Profile> {
                             children: [
                               Text(
                                 'Personal Information',
-                                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
                                       fontSize: 16,
                                     ),
                               ),
                               const SizedBox(height: 14),
-                              _buildDetailRow(Icons.phone, 'Phone Number', user?.userDetail?.phone ?? '-'),
-                              _buildDetailRow(Icons.location_on, 'Address', user?.userDetail?.address ?? '-'),
-                              _buildDetailRow(Icons.transgender, 'Gender', user?.userDetail?.gender ?? '-'),
+                              _buildDetailRow(Icons.phone, 'Phone Number',
+                                  user?.userDetail?.phone ?? '-'),
+                              _buildDetailRow(Icons.location_on, 'Address',
+                                  user?.userDetail?.address ?? '-'),
+                              _buildDetailRow(Icons.transgender, 'Gender',
+                                  user?.userDetail?.gender ?? '-'),
                               _buildDetailRow(
-                                  Icons.calendar_today, 'Date of Birth', user?.userDetail?.dateOfBirth ?? '-'),
-                              _buildDetailRow(Icons.account_balance, 'Religion', user?.userDetail?.religion ?? '-'),
-                              _buildDetailRow(Icons.work, 'Status', user?.userDetail?.status ?? '-'),
+                                  Icons.calendar_today,
+                                  'Date of Birth',
+                                  user?.userDetail?.dateOfBirth ?? '-'),
+                              _buildDetailRow(Icons.account_balance, 'Religion',
+                                  user?.userDetail?.religion ?? '-'),
+                              _buildDetailRow(Icons.work, 'Status',
+                                  user?.userDetail?.status ?? '-'),
                               const SizedBox(height: 14),
                               Center(
                                 child: ElevatedButton(
                                   onPressed: () {
-                                    Navigator.pushNamed(context, '/edit_profile', arguments: user).then((updatedUser) {
+                                    Navigator.pushNamed(
+                                            context, '/edit_profile',
+                                            arguments: user)
+                                        .then((updatedUser) {
                                       if (updatedUser != null) {
                                         setState(() {
                                           user = updatedUser as User;
@@ -281,7 +312,10 @@ class _ProfileState extends State<Profile> {
                                   },
                                   child: Text(
                                     'Edit Profile',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -305,7 +339,10 @@ class _ProfileState extends State<Profile> {
                               ),
                               title: Text(
                                 'About Us',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
                                       fontWeight: FontWeight.w500,
                                       fontSize: 13,
                                     ),
@@ -322,7 +359,10 @@ class _ProfileState extends State<Profile> {
                               ),
                               title: Text(
                                 'Settings',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
                                       fontWeight: FontWeight.w500,
                                       fontSize: 13,
                                     ),
@@ -339,7 +379,10 @@ class _ProfileState extends State<Profile> {
                               ),
                               title: Text(
                                 'Help Center',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
                                       fontWeight: FontWeight.w500,
                                       fontSize: 13,
                                     ),
@@ -356,7 +399,10 @@ class _ProfileState extends State<Profile> {
                               ),
                               title: Text(
                                 'Logout',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
                                       fontWeight: FontWeight.w500,
                                       color: darkOrange,
                                       fontSize: 13,
@@ -392,7 +438,8 @@ class _ProfileState extends State<Profile> {
                         },
                       ),
                       IconButton(
-                        icon: Icon(Icons.shopping_cart_outlined, color: darkOrange, size: 20),
+                        icon: Icon(Icons.shopping_cart_outlined,
+                            color: darkOrange, size: 20),
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -412,19 +459,19 @@ class _ProfileState extends State<Profile> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home, size: 24),
-            label: 'Home',
+            label: 'Beranda', // Diubah dari 'Home'
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.explore, size: 24),
-            label: 'Explore',
+            label: 'Jelajah', // Diubah dari 'Explore'
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications, size: 24),
-            label: 'Notifications',
+            label: 'Notifikasi', // Diubah dari 'Notifications'
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person, size: 24),
-            label: 'Profile',
+            label: 'Profil', // Diubah dari 'Profile'
           ),
         ],
         currentIndex: _selectedIndex,
@@ -465,7 +512,10 @@ class _ProfileState extends State<Profile> {
                 Text(
                   value,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.7),
                         fontSize: 12,
                       ),
                 ),

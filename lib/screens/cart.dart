@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import '../models/product.dart';
-import '/main.dart'; // Import main.dart for color constants
+import 'package:cuan_space/models/product.dart';
+import 'package:cuan_space/services/api_service.dart'; // TAMBAHKAN INI
+import 'package:cuan_space/main.dart';
 
 class Cart extends StatefulWidget {
   final Product? product;
   final int? quantity;
 
-  Cart({this.product, this.quantity});
+  const Cart({super.key, this.product, this.quantity});
 
   @override
   _CartState createState() => _CartState();
@@ -91,7 +92,10 @@ class _CartState extends State<Cart> {
                   Text(
                     'Add items to your cart to proceed.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.7),
                         ),
                     textAlign: TextAlign.center,
                   ),
@@ -115,7 +119,7 @@ class _CartState extends State<Cart> {
                         child: ListTile(
                           contentPadding: const EdgeInsets.all(12),
                           leading: Image.network(
-                            '${product.thumbnail}',
+                            '${ApiService.storageUrl}/${product.image}',
                             width: 50,
                             height: 50,
                             fit: BoxFit.cover,
@@ -129,7 +133,10 @@ class _CartState extends State<Cart> {
                           ),
                           title: Text(
                             product.name,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
                           ),
@@ -139,7 +146,10 @@ class _CartState extends State<Cart> {
                               const SizedBox(height: 4),
                               Text(
                                 'Rp ${product.price.toStringAsFixed(0)}',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
                                       color: darkOrange,
                                     ),
                               ),
@@ -153,7 +163,8 @@ class _CartState extends State<Cart> {
                                   ),
                                   Text(
                                     '$quantity',
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.add, size: 20),
@@ -183,14 +194,20 @@ class _CartState extends State<Cart> {
                         children: [
                           Text(
                             'Total Price:',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
                                 ),
                           ),
                           Text(
                             'Rp ${_calculateTotalPrice().toStringAsFixed(0)}',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
                                   fontSize: 18,
                                   color: darkOrange,
                                   fontWeight: FontWeight.w600,
@@ -203,11 +220,10 @@ class _CartState extends State<Cart> {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () {
-                            // Placeholder for checkout navigation
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Proceeding to checkout...')),
+                              const SnackBar(
+                                  content: Text('Proceeding to checkout...')),
                             );
-                            // Navigator.pushNamed(context, '/checkout'); // Uncomment when route is defined
                           },
                           child: const Text('Checkout'),
                         ),
