@@ -7,6 +7,8 @@ import '../models/product.dart';
 import '../models/seller.dart';
 import '../models/user_model.dart';
 import '../models/chat.dart';
+import '../models/faq.dart';
+
 
 class ApiService {
   static const String baseUrl = 'http://127.0.0.1:8000/api';
@@ -481,28 +483,80 @@ class ApiService {
       print('Status respons ambil profil seller: ${response.statusCode}');
       print('Isi respons ambil profil seller: ${response.body}');
 
+    if (response.statusCode == 200) {
+      var responseData = jsonDecode(response.body);
+      final seller = Seller.fromJson(responseData['data']);
+      return {
+        'success': true,
+        'data': seller,
+      };
+    } else {
+      return {
+        'success': false,
+        'message': 'Gagal memuat profil seller. Status: ${response.statusCode}',
+      };
+    }
+  } catch (e) {
+    print('Kesalahan saat ambil profil seller: $e');
+    return {
+      'success': false,
+      'message': 'Terjadi kesalahan: $e',
+    };
+  }
+}
+
+
+  Future<Map<String, dynamic>> fetchFaqs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Token tidak ditemukan. Silakan login kembali.',
+          'navigateToLogin': true,
+        };
+      }
+
+      var response = await http.get(
+        Uri.parse('$baseUrl/faqs'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Status respons ambil FAQ: ${response.statusCode}');
+      print('Isi respons ambil FAQ: ${response.body}');
+
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
-        final seller = Seller.fromJson(responseData['data']);
+        List<Faq> faqs = (responseData['data'] as List)
+            .map((json) => Faq.fromJson(json))
+            .toList();
         return {
           'success': true,
-          'data': seller,
+          'data': faqs,
         };
       } else {
         return {
           'success': false,
-          'message':
-              'Gagal memuat profil seller. Status: ${response.statusCode}',
+          'message': 'Gagal memuat FAQ.',
         };
       }
     } catch (e) {
-      print('Kesalahan saat ambil profil seller: $e');
+      print('Kesalahan saat ambil FAQ: $e');
       return {
         'success': false,
         'message': 'Terjadi kesalahan: $e',
       };
     }
   }
+
+
+
+
 
   // Start Chat
   Future<Map<String, dynamic>> startChat(int sellerId) async {

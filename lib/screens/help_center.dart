@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
+import '../models/faq.dart';
 import 'cart.dart';
 
 class HelpCenterPage extends StatefulWidget {
@@ -7,9 +9,37 @@ class HelpCenterPage extends StatefulWidget {
 }
 
 class _HelpCenterPageState extends State<HelpCenterPage> {
-  List<dynamic>? faqs;
+  List<Faq>? faqsFromApi;
+  List<Map<String, String>> staticFaqs = [
+    {
+      'question': 'Bagaimana cara melacak pesanan saya?',
+      'answer':
+          'Setelah pesanan dikirim, Anda akan menerima nomor pelacakan. Masukkan nomor tersebut di halaman Pelacakan Pesanan untuk melihat status pengiriman.'
+    },
+    {
+      'question': 'Apa metode pembayaran yang diterima?',
+      'answer':
+          'Kami menerima pembayaran melalui kartu kredit/debit, transfer bank, dompet digital, dan COD (bayar di tempat) di wilayah tertentu.'
+    },
+    {
+      'question': 'Bagaimana cara mengembalikan produk?',
+      'answer':
+          'Anda dapat mengajukan pengembalian dalam waktu 7 hari setelah menerima produk. Buka halaman Pengembalian, isi formulir, dan ikuti petunjuk untuk pengiriman kembali.'
+    },
+    {
+      'question': 'Berapa lama waktu pengiriman?',
+      'answer':
+          'Waktu pengiriman tergantung pada lokasi Anda. Umumnya, 2-5 hari kerja untuk pulau Jawa dan 5-10 hari kerja untuk luar Jawa.'
+    },
+    {
+      'question': 'Bagaimana jika produk yang diterima rusak?',
+      'answer':
+          'Hubungi kami melalui support@ecommerce.com dalam waktu 48 jam setelah menerima produk. Sertakan foto kerusakan untuk proses klaim.'
+    }
+  ];
   bool isLoading = true;
   String errorMessage = '';
+  final ApiService apiService = ApiService();
 
   @override
   void initState() {
@@ -17,7 +47,6 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
     fetchFaqs();
   }
 
-  // Fungsi untuk menampilkan notifikasi melayang
   void showFloatingNotification(String message) {
     OverlayEntry overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -41,8 +70,6 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
     );
 
     Overlay.of(context).insert(overlayEntry);
-
-    // Hapus notifikasi setelah 3 detik
     Future.delayed(Duration(seconds: 3), () {
       overlayEntry.remove();
     });
@@ -50,38 +77,19 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
 
   Future<void> fetchFaqs() async {
     try {
-      // Data FAQ statis bertema e-commerce digital
-      final staticFaqs = [
-        {
-          'question': 'Bagaimana cara melacak pesanan saya?',
-          'answer':
-              'Setelah pesanan dikirim, Anda akan menerima nomor pelacakan. Masukkan nomor tersebut di halaman Pelacakan Pesanan untuk melihat status pengiriman.'
-        },
-        {
-          'question': 'Apa metode pembayaran yang diterima?',
-          'answer':
-              'Kami menerima pembayaran melalui kartu kredit/debit, transfer bank, dompet digital, dan COD (bayar di tempat) di wilayah tertentu.'
-        },
-        {
-          'question': 'Bagaimana cara mengembalikan produk?',
-          'answer':
-              'Anda dapat mengajukan pengembalian dalam waktu 7 hari setelah menerima produk. Buka halaman Pengembalian, isi formulir, dan ikuti petunjuk untuk pengiriman kembali.'
-        },
-        {
-          'question': 'Berapa lama waktu pengiriman?',
-          'answer':
-              'Waktu pengiriman tergantung pada lokasi Anda. Umumnya, 2-5 hari kerja untuk pulau Jawa dan 5-10 hari kerja untuk luar Jawa.'
-        },
-        {
-          'question': 'Bagaimana jika produk yang diterima rusak?',
-          'answer':
-              'Hubungi kami melalui support@ecommerce.com dalam waktu 48 jam setelah menerima produk. Sertakan foto kerusakan untuk proses klaim.'
-        }
-      ];
-      setState(() {
-        faqs = staticFaqs;
-        isLoading = false;
-      });
+      final response = await apiService.fetchFaqs();
+      if (response['success']) {
+        setState(() {
+          faqsFromApi = response['data'];
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          errorMessage = response['message'];
+          isLoading = false;
+        });
+        showFloatingNotification(response['message']);
+      }
     } catch (e) {
       setState(() {
         errorMessage = 'Terjadi kesalahan: $e';
@@ -111,7 +119,7 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(height: 60), // Ruang untuk tombol kembali dan ikon
+                          SizedBox(height: 60),
                           Text(
                             'Pusat Bantuan',
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -135,13 +143,13 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                                 ),
                           ),
                           SizedBox(height: 8),
-                          if (faqs != null && faqs!.isNotEmpty)
-                            ...faqs!.map(
+                          if (staticFaqs.isNotEmpty)
+                            ...staticFaqs.map(
                               (faq) => Card(
                                 color: Theme.of(context).cardColor,
                                 child: ExpansionTile(
                                   title: Text(
-                                    faq['question'] ?? 'Pertanyaan',
+                                    faq['question']!,
                                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -150,7 +158,41 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                                     Padding(
                                       padding: EdgeInsets.all(16),
                                       child: Text(
-                                        faq['answer'] ?? 'Jawaban tidak tersedia',
+                                        faq['answer']!,
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                              color: Theme.of(context).colorScheme.secondary,
+                                            ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          SizedBox(height: 24),
+                          Text(
+                            'Pertanyaan Lainnya',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          SizedBox(height: 8),
+                          if (faqsFromApi != null && faqsFromApi!.isNotEmpty)
+                            ...faqsFromApi!.map(
+                              (faq) => Card(
+                                color: Theme.of(context).cardColor,
+                                child: ExpansionTile(
+                                  title: Text(
+                                    faq.question,
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                  ),
+                                  children: [
+                                    Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Text(
+                                        faq.answer,
                                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                               color: Theme.of(context).colorScheme.secondary,
                                             ),
@@ -162,7 +204,7 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                             )
                           else
                             Text(
-                              'Tidak ada FAQ tersedia saat ini.',
+                              'Tidak ada FAQ lainnya tersedia saat ini.',
                               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Theme.of(context).colorScheme.secondary,
                                   ),
@@ -183,13 +225,12 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                                   ),
                             ),
                             onTap: () {
-                              // Implementasi kontak email (misalnya, buka aplikasi email)
+                              // Implementasi kontak email
                             },
                           ),
                         ],
                       ),
                     ),
-          // Tombol Kembali dan Ikon Keranjang
           Positioned(
             top: 10,
             left: 10,
