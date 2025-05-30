@@ -11,7 +11,7 @@ import 'package:cuan_space/screens/login.dart';
 import 'package:cuan_space/screens/register.dart';
 import 'package:cuan_space/screens/splash_screen.dart';
 import 'package:cuan_space/screens/home.dart';
-import 'package:cuan_space/screens/explore.dart';
+import 'package:cuan_space/screens/trending.dart';
 import 'package:cuan_space/screens/profile.dart';
 import 'package:cuan_space/screens/notification.dart' as NotificationScreen;
 import 'package:cuan_space/screens/product_detail.dart';

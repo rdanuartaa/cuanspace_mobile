@@ -12,7 +12,7 @@ class Kategori {
   factory Kategori.fromJson(Map<String, dynamic> json) {
     return Kategori(
       id: json['id'] ?? 0,
-      namaKategori: json['nama_kategori'] ?? 'Unknown Category',
+      namaKategori: json['nama_kategori'] ?? '',
       slug: json['slug'],
     );
   }

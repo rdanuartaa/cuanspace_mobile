@@ -40,56 +40,72 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _startPolling() {
-    _pollingTimer = Timer.periodic(Duration(seconds: 10), (timer) {
+  _pollingTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+    if (mounted) {
       fetchMessages(silent: true);
-    });
-  }
+    }
+  });
+}
 
   Future<void> fetchMessages({bool silent = false}) async {
-    if (chatId == 0) {
-      if (!silent) {
-        setState(() {
-          isLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ID percakapan tidak valid')),
-        );
-      }
-      return;
+  if (chatId == 0) {
+    if (!silent) {
+      setState(() {
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('ID percakapan tidak valid')),
+      );
     }
+    return;
+  }
 
-    try {
-      final result = await apiService.fetchMessages(chatId!);
-      if (result['success']) {
+  try {
+    final result = await apiService.fetchMessages(chatId!);
+    if (result['success']) {
+      final newMessages = result['data'];
+      if (!_isMessagesEqual(messages, newMessages)) {
         setState(() {
-          messages = result['data'];
+          messages = newMessages;
           if (!silent) isLoading = false;
         });
-      } else {
-        if (!silent) {
-          setState(() {
-            isLoading = false;
-          });
-          if (result['navigateToLogin'] == true) {
-            Navigator.pushReplacementNamed(context, '/login');
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(result['message'] ?? 'Gagal memuat pesan')),
-            );
-          }
-        }
       }
-    } catch (e) {
+    } else {
       if (!silent) {
         setState(() {
           isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memuat pesan: $e')),
-        );
+        if (result['navigateToLogin'] == true) {
+          Navigator.pushReplacementNamed(context, '/login');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['message'] ?? 'Gagal memuat pesan')),
+          );
+        }
       }
     }
+  } catch (e) {
+    if (!silent) {
+      setState(() {
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memuat pesan: $e')),
+      );
+    }
   }
+}
+
+bool _isMessagesEqual(List<Message> oldList, List<Message> newList) {
+  if (oldList.length != newList.length) return false;
+  for (int i = 0; i < oldList.length; i++) {
+    if (oldList[i].id != newList[i].id ||
+        oldList[i].content != newList[i].content) {
+      return false;
+    }
+  }
+  return true;
+}
 
   Future<void> sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;

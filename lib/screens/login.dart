@@ -37,19 +37,19 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
   }
 
   Future<void> loginUser() async {
-    if (_formKey.currentState!.validate()) {
-      var result = await _apiService.login(
-        _emailController.text,
-        _passwordController.text,
-      );
-
-      if (result['success']) {
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        _showErrorDialog(result['message']);
-      }
+  if (_formKey.currentState!.validate()) {
+    var result = await _apiService.login(
+      _emailController.text,
+      _passwordController.text,
+    );
+    print('Login result: $result');
+    if (result['success']) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      _showErrorDialog(result['message']);
     }
   }
+}
 
   void _showErrorDialog(String message) {
     showDialog(

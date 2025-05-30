@@ -9,13 +9,12 @@ import '../models/user_model.dart';
 import '../models/chat.dart';
 import '../models/faq.dart';
 
-
 class ApiService {
-  static const String baseUrl = 'http://127.0.0.1:8000/api';
-  static const String storageUrl = 'http://127.0.0.1:8000/storage';
+  static const String baseUrl = 'http://localhost:8000/api';
+  static const String storageUrl = 'http://localhost:8000/storage';
   //static const String baseUrl = 'http://10.0.2.2/api';
-  // static const String baseUrl = 'http://192.168.137.1:8000/api';
-  // static const String storageUrl = 'http://192.168.137.1:8000/storage';
+  // static const String baseUrl = 'http://192.168.1.4:8000/api';
+  // static const String storageUrl = 'http://192.168.1.4:8000/storage';
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
@@ -36,8 +35,12 @@ class ApiService {
         if (responseData['status'] == 'success') {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('token', responseData['data']['token']);
-          await prefs.setString(
-              'user', jsonEncode(responseData['data']['user']));
+          var userData = responseData['data']['user'];
+          // Explicitly set is_seller as boolean
+          bool isSeller = responseData['is_seller'] == true ||
+              responseData['is_seller'] == 'true';
+          userData['is_seller'] = isSeller;
+          await prefs.setString('user', jsonEncode(userData));
           return {
             'success': true,
             'message': 'Login berhasil.',
@@ -239,6 +242,7 @@ class ApiService {
       final token = prefs.getString('token');
 
       if (token == null) {
+        print('Error: Token tidak ditemukan');
         return {
           'success': false,
           'message': 'Token tidak ditemukan. Silakan login kembali.',
@@ -259,17 +263,41 @@ class ApiService {
 
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
-        List<Kategori> kategoris = (responseData['data'] as List)
-            .map((json) => Kategori.fromJson(json))
-            .toList();
+        if (responseData['success'] != true) {
+          print('Error: Respons API tidak sukses - ${responseData['message']}');
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Gagal memuat kategori.',
+          };
+        }
+
+        if (responseData['data'] == null || responseData['data'].isEmpty) {
+          print('Warning: Data kategori kosong');
+          return {
+            'success': true,
+            'data': [],
+            'message': 'Tidak ada kategori tersedia.',
+          };
+        }
+
+        List<Kategori> kategoris =
+            (responseData['data'] as List<dynamic>).map((json) {
+          if (json is Map<String, dynamic>) {
+            return Kategori.fromJson(json);
+          }
+          print('Error: Data kategori tidak valid - $json');
+          throw FormatException('Data kategori tidak valid: $json');
+        }).toList();
         return {
           'success': true,
           'data': kategoris,
+          'message': 'Kategori berhasil diambil.',
         };
       } else {
+        print('Error: Status code ${response.statusCode}');
         return {
           'success': false,
-          'message': 'Gagal memuat kategori.',
+          'message': 'Gagal memuat kategori: ${response.statusCode}',
         };
       }
     } catch (e) {
@@ -281,13 +309,24 @@ class ApiService {
     }
   }
 
-  // Fetch Products
   Future<Map<String, dynamic>> fetchProducts() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
+      final userJson = prefs.getString('user');
+      int? userId;
+      String? userRole;
+
+      if (userJson != null) {
+        final userData = jsonDecode(userJson);
+        userId = userData['id'] != null
+            ? int.tryParse(userData['id'].toString())
+            : null;
+        userRole = userData['role']?.toString(); // Ambil role dari user data
+      }
 
       if (token == null) {
+        print('Error: Token tidak ditemukan');
         return {
           'success': false,
           'message': 'Token tidak ditemukan. Silakan login kembali.',
@@ -308,17 +347,57 @@ class ApiService {
 
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
-        List<Product> products = (responseData['data'] as List)
-            .map((json) => Product.fromJson(json))
-            .toList();
+        if (responseData['success'] != true) {
+          print('Error: Respons API tidak sukses - ${responseData['message']}');
+          return {
+            'success': false,
+            'message': responseData['message'] ?? 'Gagal memuat produk.',
+          };
+        }
+
+        if (responseData['data'] == null || responseData['data'].isEmpty) {
+          print('Warning: Data produk kosong');
+          return {
+            'success': true,
+            'data': [],
+            'message': 'Tidak ada produk tersedia.',
+          };
+        }
+
+        List<Product> products =
+            (responseData['data'] as List<dynamic>).map((json) {
+          if (json is Map<String, dynamic>) {
+            print('Parsing produk: $json');
+            var productJson = json;
+            if (productJson['thumbnail'] != null &&
+                !productJson['thumbnail'].startsWith('http')) {
+              productJson['thumbnail'] =
+                  '$storageUrl/${productJson['thumbnail']}';
+            } else if (productJson['thumbnail'] == null) {
+              productJson['thumbnail'] = 'https://via.placeholder.com/300x200';
+            }
+            return Product.fromJson(productJson);
+          }
+          print('Error: Data produk tidak valid - $json');
+          throw FormatException('Data produk tidak valid: $json');
+        }).where((product) {
+          // Hanya filter produk milik seller jika pengguna adalah seller
+          if (userRole == 'seller' && userId != null) {
+            return product.sellerId != userId;
+          }
+          return true; // Tidak ada filter untuk role user
+        }).toList();
+
         return {
           'success': true,
           'data': products,
+          'message': 'Produk berhasil diambil.',
         };
       } else {
+        print('Error: Status code ${response.statusCode}');
         return {
           'success': false,
-          'message': 'Gagal memuat produk.',
+          'message': 'Gagal memuat produk: ${response.statusCode}',
         };
       }
     } catch (e) {
@@ -373,6 +452,55 @@ class ApiService {
       }
     } catch (e) {
       print('Kesalahan saat ambil profil pengguna: $e');
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan: $e',
+      };
+    }
+  }
+
+  // Fetch FAQs
+  Future<Map<String, dynamic>> fetchFaqs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Token tidak ditemukan. Silakan login kembali.',
+          'navigateToLogin': true,
+        };
+      }
+
+      var response = await http.get(
+        Uri.parse('$baseUrl/faqs'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Status respons ambil FAQ: ${response.statusCode}');
+      print('Isi respons ambil FAQ: ${response.body}');
+
+      if (response.statusCode == 200) {
+        var responseData = jsonDecode(response.body);
+        List<Faq> faqs = (responseData['data'] as List)
+            .map((json) => Faq.fromJson(json))
+            .toList();
+        return {
+          'success': true,
+          'data': faqs,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Gagal memuat FAQ.',
+        };
+      }
+    } catch (e) {
+      print('Kesalahan saat ambil FAQ: $e');
       return {
         'success': false,
         'message': 'Terjadi kesalahan: $e',
@@ -461,6 +589,12 @@ class ApiService {
   // Fetch Seller Profile
   Future<Map<String, dynamic>> fetchSellerProfile(int sellerId) async {
     try {
+      if (sellerId <= 0) {
+        return {
+          'success': false,
+          'message': 'ID penjual tidak valid.',
+        };
+      }
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
@@ -480,33 +614,34 @@ class ApiService {
         },
       );
 
-      print('Status respons ambil profil seller: ${response.statusCode}');
-      print('Isi respons ambil profil seller: ${response.body}');
+      print('Status respons ambil profil penjual: ${response.statusCode}');
+      print('Isi respons ambil profil penjual: ${response.body}');
 
-    if (response.statusCode == 200) {
-      var responseData = jsonDecode(response.body);
-      final seller = Seller.fromJson(responseData['data']);
-      return {
-        'success': true,
-        'data': seller,
-      };
-    } else {
+      if (response.statusCode == 200) {
+        var responseData = jsonDecode(response.body);
+        final seller = Seller.fromJson(responseData['data']);
+        return {
+          'success': true,
+          'data': seller,
+        };
+      } else {
+        var responseData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': responseData['message'] ??
+              'Gagal memuat profil penjual. Status: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print('Kesalahan saat ambil profil penjual: $e');
       return {
         'success': false,
-        'message': 'Gagal memuat profil seller. Status: ${response.statusCode}',
+        'message': 'Terjadi kesalahan: $e',
       };
     }
-  } catch (e) {
-    print('Kesalahan saat ambil profil seller: $e');
-    return {
-      'success': false,
-      'message': 'Terjadi kesalahan: $e',
-    };
   }
-}
 
-
-  Future<Map<String, dynamic>> fetchFaqs() async {
+  Future<Map<String, dynamic>> fetchReviews(int productId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
@@ -520,33 +655,30 @@ class ApiService {
       }
 
       var response = await http.get(
-        Uri.parse('$baseUrl/faqs'),
+        Uri.parse('$baseUrl/products/$productId/reviews'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
 
-      print('Status respons ambil FAQ: ${response.statusCode}');
-      print('Isi respons ambil FAQ: ${response.body}');
+      print('Status respons ambil ulasan: ${response.statusCode}');
+      print('Isi respons ambil ulasan: ${response.body}');
 
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
-        List<Faq> faqs = (responseData['data'] as List)
-            .map((json) => Faq.fromJson(json))
-            .toList();
         return {
           'success': true,
-          'data': faqs,
+          'data': responseData['data'],
         };
       } else {
         return {
           'success': false,
-          'message': 'Gagal memuat FAQ.',
+          'message': 'Gagal memuat ulasan. Status: ${response.statusCode}',
         };
       }
     } catch (e) {
-      print('Kesalahan saat ambil FAQ: $e');
+      print('Kesalahan saat ambil ulasan: $e');
       return {
         'success': false,
         'message': 'Terjadi kesalahan: $e',
@@ -554,13 +686,15 @@ class ApiService {
     }
   }
 
-
-
-
-
   // Start Chat
   Future<Map<String, dynamic>> startChat(int sellerId) async {
     try {
+      if (sellerId <= 0) {
+        return {
+          'success': false,
+          'message': 'ID penjual tidak valid.',
+        };
+      }
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('token');
 
@@ -594,9 +728,11 @@ class ApiService {
           'data': responseData['data'],
         };
       } else {
+        var responseData = jsonDecode(response.body);
         return {
           'success': false,
-          'message': 'Gagal memulai percakapan. Status: ${response.statusCode}',
+          'message': responseData['message'] ??
+              'Gagal memulai percakapan. Status: ${response.statusCode}',
         };
       }
     } catch (e) {
@@ -615,16 +751,21 @@ class ApiService {
       final token = prefs.getString('token');
       final userJson = prefs.getString('user');
       bool isSeller = false;
+      int? userId;
 
       if (userJson != null) {
         final userData = jsonDecode(userJson);
         isSeller = userData['is_seller'] ?? false;
+        userId = userData['id'] != null
+            ? int.tryParse(userData['id'].toString())
+            : null;
+        print('User data: $userData, isSeller: $isSeller, userId: $userId');
       }
 
-      if (token == null) {
+      if (token == null || userId == null) {
         return {
           'success': false,
-          'message': 'Token tidak ditemukan. Silakan login kembali.',
+          'message': 'Token atau user tidak ditemukan. Silakan login kembali.',
           'navigateToLogin': true,
         };
       }
@@ -638,29 +779,51 @@ class ApiService {
         },
       );
 
-      print('Status respons ambil notifikasi: ${response.statusCode}');
-      print('Isi respons ambil notifikasi: ${response.body}');
+      print('Status respons: ${response.statusCode}');
+      print('Isi respons: ${response.body}');
 
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
+        print('Raw response data: ${responseData['data']}');
         List<dynamic> notifications =
             (responseData['data'] as List).map((item) {
+          String time = item['created_at']?.toString() ?? '';
+          if (time.isNotEmpty) {
+            try {
+              DateTime.parse(time);
+            } catch (e) {
+              print('Invalid date format for created_at: $time');
+              time = DateTime.now().toIso8601String();
+            }
+          } else {
+            time = DateTime.now().toIso8601String();
+          }
           return {
-            'id': item['id'],
-            'title': item['judul'],
-            'description': item['pesan'],
-            'type': item['pelaku'],
-            'status': item['status'],
-            'time': item['jadwal_kirim'],
+            'id': item['id'] ?? 0,
+            'title': item['judul']?.toString() ?? 'Tanpa Judul',
+            'description': item['pesan']?.toString() ?? 'Tanpa Pesan',
+            'type': item['penerima']?.toString() ?? 'unknown',
+            'status': item['status']?.toString() ?? 'unknown',
+            'time': time,
             'read': item['read'] ?? false,
             'chat_id': item['chat_id'],
             'seller_id': item['seller_id'],
+            'user_id': item['user_id'],
           };
         }).where((item) {
-          return item['type'] == 'semua' ||
+          bool isRelevant = item['type'] == 'semua' ||
               item['type'] == (isSeller ? 'seller' : 'pengguna') ||
-              (item['type'] == 'khusus');
+              (item['type'] == 'khusus' &&
+                  ((item['seller_id'] != null &&
+                          item['seller_id'] == (isSeller ? userId : null)) ||
+                      (item['user_id'] != null &&
+                          item['user_id'] == (isSeller ? null : userId))));
+          if (!isRelevant) {
+            print('Notifikasi tidak relevan: $item');
+          }
+          return isRelevant || (item['type'] == 'seller' && isSeller);
         }).toList();
+        print('Notifikasi setelah filter: $notifications');
         return {
           'success': true,
           'data': notifications,
@@ -676,7 +839,7 @@ class ApiService {
       print('Kesalahan saat ambil notifikasi: $e');
       return {
         'success': false,
-        'message': 'Terjadi kesalahan koneksi: $e',
+        'message': 'Terjadi kesalahan: $e',
       };
     }
   }
@@ -729,7 +892,7 @@ class ApiService {
     }
   }
 
-  // Fetch Chats
+  // fetchChats
   Future<Map<String, dynamic>> fetchChats() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -756,17 +919,46 @@ class ApiService {
 
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
-        List<Chat> chats = (responseData['data'] as List)
-            .map((json) => Chat.fromJson(json))
-            .toList();
+        if (responseData['data'] == null || responseData['data'].isEmpty) {
+          return {
+            'success': true,
+            'data': [],
+            'message': 'Tidak ada percakapan tersedia.',
+          };
+        }
+        List<Chat> chats = (responseData['data'] as List).map((json) {
+          print('Parsing chat: $json');
+          String time = json['last_message_time']?.toString() ?? '';
+          if (time.isNotEmpty) {
+            try {
+              DateTime.parse(time);
+            } catch (e) {
+              print('Invalid date format for last_message_time: $time');
+              time = DateTime.now().toIso8601String();
+            }
+          } else {
+            time = DateTime.now().toIso8601String();
+          }
+          return Chat.fromJson({
+            'id': json['id'] ?? 0,
+            'seller_id': json['seller_id'] ?? 0,
+            'seller_name': json['seller_name'] ?? 'Penjual Tidak Diketahui',
+            'last_message': json['last_message']?.isNotEmpty == true
+                ? json['last_message']
+                : 'Belum ada pesan',
+            'last_message_time': time,
+            'sender_name': json['sender_name'] ?? 'Pengguna Tidak Diketahui',
+          });
+        }).toList();
         return {
           'success': true,
           'data': chats,
+          'message': 'Daftar chat berhasil diambil.',
         };
       } else {
         return {
           'success': false,
-          'message': 'Gagal memuat daftar chat.',
+          'message': 'Gagal memuat daftar chat. Status: ${response.statusCode}',
         };
       }
     } catch (e) {
@@ -778,7 +970,7 @@ class ApiService {
     }
   }
 
-  // Fetch Messages
+// fetchMessages
   Future<Map<String, dynamic>> fetchMessages(int chatId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -805,17 +997,26 @@ class ApiService {
 
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
-        List<Message> messages = (responseData['data'] as List)
-            .map((json) => Message.fromJson(json))
-            .toList();
+        if (responseData['data'] == null) {
+          return {
+            'success': true,
+            'data': [],
+            'message': 'Tidak ada pesan tersedia.',
+          };
+        }
+        List<Message> messages = (responseData['data'] as List).map((json) {
+          print('Parsing pesan: $json');
+          return Message.fromJson(json);
+        }).toList();
         return {
           'success': true,
           'data': messages,
+          'message': 'Pesan berhasil diambil.',
         };
       } else {
         return {
           'success': false,
-          'message': 'Gagal memuat pesan.',
+          'message': 'Gagal memuat pesan. Status: ${response.statusCode}',
         };
       }
     } catch (e) {
@@ -827,7 +1028,7 @@ class ApiService {
     }
   }
 
-  // Send Message
+// sendMessage
   Future<Map<String, dynamic>> sendMessage(int chatId, String content) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -863,9 +1064,11 @@ class ApiService {
           'data': Message.fromJson(responseData['data']),
         };
       } else {
+        var responseData = jsonDecode(response.body);
         return {
           'success': false,
-          'message': 'Gagal mengirim pesan.',
+          'message': responseData['message'] ??
+              'Gagal mengirim pesan. Status: ${response.statusCode}',
         };
       }
     } catch (e) {
