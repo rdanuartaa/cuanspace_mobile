@@ -1,31 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:cuan_space/services/theme_provider.dart';
 import 'package:cuan_space/services/api_service.dart';
-import 'package:cuan_space/bloc/trending/trending_bloc.dart';
-import 'package:cuan_space/bloc/trending/trending_event.dart';
-import 'package:cuan_space/screens/chat.dart';
-import 'package:cuan_space/screens/welcome.dart';
-import 'package:cuan_space/screens/login.dart';
-import 'package:cuan_space/screens/register.dart';
-import 'package:cuan_space/screens/splash_screen.dart';
-import 'package:cuan_space/screens/home.dart';
-import 'package:cuan_space/screens/trending.dart';
-import 'package:cuan_space/screens/profile.dart';
-import 'package:cuan_space/screens/notification.dart' as NotificationScreen;
-import 'package:cuan_space/screens/product_detail.dart';
-import 'package:cuan_space/screens/cart.dart';
-import 'package:cuan_space/screens/forgotpassword.dart';
-import 'package:cuan_space/screens/resetpassword.dart';
-import 'package:cuan_space/screens/sellerprofile.dart';
-import 'package:cuan_space/screens/settings.dart';
-import 'package:cuan_space/screens/about_us.dart';
-import 'package:cuan_space/screens/help_center.dart';
-import 'package:cuan_space/screens/edit_profile.dart';
-import 'package:cuan_space/models/user_model.dart';
-import 'package:cuan_space/models/user_detail_model.dart';
-import 'package:cuan_space/models/product.dart';
+import 'screens/welcome.dart';
+import 'screens/login.dart';
+import 'screens/register.dart';
+import 'screens/splash_screen.dart';
+import 'screens/home.dart';
+import 'screens/trending.dart';
+import 'screens/profile.dart';
+import 'screens/notification.dart' as NotificationScreen;
+import 'screens/product_detail.dart';
+import 'screens/cart.dart';
+import 'screens/forgotpassword.dart';
+import 'screens/resetpassword.dart';
+import 'screens/sellerprofile.dart';
+import 'screens/settings.dart';
+import 'screens/about_us.dart';
+import 'screens/help_center.dart';
+import 'screens/edit_profile.dart';
+import 'screens/orderconfirmation.dart';
+import 'screens/chat.dart';
+import 'models/user_model.dart';
+import 'models/user_detail_model.dart';
+import 'models/product.dart';
 
 // WARNA PALET FINAL
 const darkOrange = Color(0xFFF46A24);
@@ -35,16 +31,7 @@ const lightGrey = Color(0xFFEDEDED);
 const darkGrey = Color(0xFF2A2A2A);
 
 void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => ThemeProvider(),
-      child: BlocProvider(
-        create: (context) => TrendingBloc(ApiService())
-          ..add(const FetchTrendingProducts('views')),
-        child: const MyApp(),
-      ),
-    ),
-  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -199,17 +186,16 @@ class MyApp extends StatelessWidget {
           backgroundColor: darkGrey,
         ),
       ),
-      themeMode: Provider.of<ThemeProvider>(context).themeMode,
-      initialRoute: '/welcome',
+      initialRoute: '/splash',
       routes: {
         '/splash': (context) => const SplashScreen(),
-        '/welcome': (context) => Welcome(),
-        '/login': (context) => Login(),
-        '/register': (context) => Register(),
-        '/home': (context) => Home(),
-        '/explore': (context) => Explore(),
-        '/notification': (context) => NotificationScreen.Notification(),
-        '/profile': (context) => Profile(),
+        '/welcome': (context) =>  Welcome(),
+        '/login': (context) =>  Login(),
+        '/register': (context) =>  Register(),
+        '/home': (context) => const Home(),
+        '/explore': (context) => const Explore(),
+        '/notification': (context) => const NotificationScreen.Notification(),
+        '/profile': (context) => const Profile(),
         '/product_detail': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           return ProductDetail(
@@ -225,15 +211,14 @@ class MyApp extends StatelessWidget {
                     image: '',
                     digitalFile: '',
                     status: 'unknown',
-                    purchaseCount: 0,
                   ),
           );
         },
-        '/cart': (context) => Cart(),
-        '/forgot-password': (context) => ForgotPassword(),
-        '/reset-password': (context) => ResetPassword(),
-        '/settings': (context) => SettingsPage(),
-        '/about_us': (context) => AboutUsPage(),
+        '/cart': (context) => const Cart(),
+        '/forgot-password': (context) => const ForgotPassword(),
+        '/reset-password': (context) => const ResetPassword(),
+        '/settings': (context) => const SettingsPage(),
+        '/about_us': (context) =>  AboutUsPage(),
         '/help_center': (context) => HelpCenterPage(),
         '/edit_profile': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
@@ -266,66 +251,8 @@ class MyApp extends StatelessWidget {
             sellerName: 'Nama Seller',
           );
         },
+        '/order': (context) => const OrderConfirmation(),
       },
-    );
-  }
-}
-
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
-
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
-
-  static List<Widget> _widgetOptions = <Widget>[
-    const Home(),
-    const Explore(),
-    NotificationScreen.Notification(),
-    Profile(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _widgetOptions.elementAt(_selectedIndex),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home, size: 24),
-            label: 'Beranda', // Diubah dari 'Home'
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.explore, size: 24),
-            label: 'Jelajah', // Diubah dari 'Explore'
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications, size: 24),
-            label: 'Notifikasi', // Diubah dari 'Notifications'
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person, size: 24),
-            label: 'Profil', // Diubah dari 'Profile'
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: darkOrange,
-        unselectedItemColor: Theme.of(context).colorScheme.onSurface,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        elevation: 4,
-        showUnselectedLabels: true,
-      ),
     );
   }
 }

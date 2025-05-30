@@ -47,7 +47,7 @@ class _ChatScreenState extends State<ChatScreen> {
   });
 }
 
-  Future<void> fetchMessages({bool silent = false}) async {
+    Future<void> fetchMessages({bool silent = false}) async {
   if (chatId == 0) {
     if (!silent) {
       setState(() {
@@ -59,15 +59,24 @@ class _ChatScreenState extends State<ChatScreen> {
     }
     return;
   }
-
   try {
     final result = await apiService.fetchMessages(chatId!);
+    print('Fetch messages result: $result'); // Debugging
     if (result['success']) {
-      final newMessages = result['data'];
-      if (!_isMessagesEqual(messages, newMessages)) {
+      final newMessages = result['data'] as List;
+      if (!_isMessagesEqual(messages, newMessages.cast<Message>())) {
+        if (!silent) {
+          setState(() {
+            isLoading = true; // Set loading state before updating messages
+          });
+        }
         setState(() {
-          messages = newMessages;
+          messages = newMessages.cast<Message>();
           if (!silent) isLoading = false;
+        });
+      } else if (!silent) {
+        setState(() {
+          isLoading = false;
         });
       }
     } else {
@@ -76,6 +85,7 @@ class _ChatScreenState extends State<ChatScreen> {
           isLoading = false;
         });
         if (result['navigateToLogin'] == true) {
+          print('Navigating to login due to invalid token'); // Debugging
           Navigator.pushReplacementNamed(context, '/login');
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -85,6 +95,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
   } catch (e) {
+    print('Fetch messages exception in chat.dart: $e'); // Debugging
     if (!silent) {
       setState(() {
         isLoading = false;
