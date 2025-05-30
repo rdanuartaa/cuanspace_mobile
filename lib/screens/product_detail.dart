@@ -22,11 +22,29 @@ class _ProductDetailState extends State<ProductDetail> {
   bool hasPurchased = false;
   bool isLoadingReviews = true;
   String errorMessage = '';
+  bool isOwnProduct = false;
 
   @override
   void initState() {
     super.initState();
     fetchReviews();
+    checkIfOwnProduct();
+  }
+
+  Future<void> checkIfOwnProduct() async {
+    try {
+      final user = await apiService.getCurrentUser();
+      setState(() {
+        isOwnProduct = user != null &&
+            user.id != null &&
+            widget.product.sellerId == user.id;
+      });
+    } catch (e) {
+      print('Error checking own product: $e');
+      setState(() {
+        isOwnProduct = false;
+      });
+    }
   }
 
   Future<void> fetchReviews() async {
@@ -141,13 +159,15 @@ class _ProductDetailState extends State<ProductDetail> {
                           IconButton(
                             icon: Icon(Icons.remove,
                                 color: Theme.of(context).iconTheme.color),
-                            onPressed: () {
-                              if (quantity > 1) {
-                                setState(() {
-                                  quantity--;
-                                });
-                              }
-                            },
+                            onPressed: isOwnProduct
+                                ? null
+                                : () {
+                                    if (quantity > 1) {
+                                      setState(() {
+                                        quantity--;
+                                      });
+                                    }
+                                  },
                           ),
                           Text(
                             '$quantity',
@@ -159,14 +179,30 @@ class _ProductDetailState extends State<ProductDetail> {
                           IconButton(
                             icon: Icon(Icons.add,
                                 color: Theme.of(context).iconTheme.color),
-                            onPressed: () {
-                              setState(() {
-                                quantity++;
-                              });
-                            },
+                            onPressed: isOwnProduct
+                                ? null
+                                : () {
+                                    setState(() {
+                                      quantity++;
+                                    });
+                                  },
                           ),
                         ],
                       ),
+                      if (isOwnProduct)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'Anda tidak dapat membeli produk Anda sendiri.',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Colors.red,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                          ),
+                        ),
                       const SizedBox(height: 16),
                       Row(
                         children: [
@@ -252,88 +288,49 @@ class _ProductDetailState extends State<ProductDetail> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           ElevatedButton(
-                            onPressed: () {
-                              if (widget.product.sellerId == 0) {
-                                showFloatingNotification(
-                                    'Seller tidak ditemukan');
-                                return;
-                              }
-                              Navigator.pushNamed(
-                                context,
-                                '/seller-profile',
-                                arguments: widget.product.sellerId,
-                              );
-                            },
+                            onPressed: widget.product.sellerId <= 0
+                                ? null
+                                : () async {
+                                    try {
+                                      final result = await apiService
+                                          .startChat(widget.product.sellerId);
+                                      if (result['success']) {
+                                        print(
+                                            'Chat started, chat_id: ${result['data']['chat_id']}'); // Debugging
+                                        Navigator.pushNamed(context, '/chat',
+                                            arguments: {
+                                              'chat_id': result['data']
+                                                  ['chat_id'],
+                                              'seller_id': result['data']
+                                                  ['seller_id'],
+                                              'seller_name': result['data']
+                                                      ['seller_name'] ??
+                                                  'Penjual Tidak Diketahui',
+                                            });
+                                      } else {
+                                        print(
+                                            'Start chat failed: ${result['message']}'); // Debugging
+                                        showFloatingNotification(
+                                            result['message']);
+                                        if (result['navigateToLogin'] == true) {
+                                          Navigator.pushReplacementNamed(
+                                              context, '/login');
+                                        }
+                                      }
+                                    } catch (e) {
+                                      print(
+                                          'Start chat exception: $e'); // Debugging
+                                      showFloatingNotification(
+                                          'Terjadi kesalahan: $e');
+                                    }
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: darkOrange,
                               foregroundColor: softWhite,
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 12),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              'Lihat Profil Seller',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Poppins',
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: widget.product.sellerId <= 0
-                                ? null // Nonaktifkan tombol jika sellerId tidak valid
-                                : () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/seller-profile',
-                                      arguments: widget.product.sellerId,
-                                    );
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: darkOrange,
-                              foregroundColor: softWhite,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              'Lihat Profil Penjual',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Poppins',
-                              ),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: widget.product.sellerId <= 0
-                                ? null // Nonaktifkan tombol jika sellerId tidak valid
-                                : () async {
-                                    final result = await apiService.startChat(widget.product.sellerId);
-                                    if (result['success']) {
-                                      Navigator.pushNamed(context, '/chat', arguments: {
-                                        'chat_id': result['data']['chat_id'],
-                                        'seller_id': result['data']['seller_id'],
-                                        'seller_name': result['data']['seller_name'] ?? 'Penjual Tidak Diketahui',
-                                      });
-                                    } else {
-                                      showFloatingNotification(result['message']);
-                                      if (result['navigateToLogin'] == true) {
-                                        Navigator.pushReplacementNamed(context, '/login');
-                                      }
-                                    }
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: darkOrange,
-                              foregroundColor: softWhite,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                                  borderRadius: BorderRadius.circular(12)),
                             ),
                             child: const Text(
                               'Chat Penjual',
@@ -357,29 +354,37 @@ class _ProductDetailState extends State<ProductDetail> {
                       ),
                       const SizedBox(height: 8),
                       isLoadingReviews
-                          ? Center(child: CircularProgressIndicator(color: darkOrange))
+                          ? Center(
+                              child:
+                                  CircularProgressIndicator(color: darkOrange))
                           : errorMessage.isNotEmpty
                               ? Center(child: Text(errorMessage))
                               : reviews.isEmpty
-                                  ? Center(child: Text('Belum ada ulasan untuk produk ini.'))
+                                  ? Center(
+                                      child: Text(
+                                          'Belum ada ulasan untuk produk ini.'))
                                   : Column(
                                       children: reviews.map((review) {
                                         return Card(
-                                          margin: const EdgeInsets.symmetric(vertical: 8),
+                                          margin: const EdgeInsets.symmetric(
+                                              vertical: 8),
                                           child: Padding(
                                             padding: const EdgeInsets.all(12),
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Row(
                                                   children: [
                                                     Text(
-                                                      review['user']['name'] ?? 'Anonim',
+                                                      review['user']['name'] ??
+                                                          'Anonim',
                                                       style: Theme.of(context)
                                                           .textTheme
                                                           .bodyMedium
                                                           ?.copyWith(
-                                                            fontWeight: FontWeight.w600,
+                                                            fontWeight:
+                                                                FontWeight.w600,
                                                           ),
                                                     ),
                                                     const Spacer(),
@@ -398,12 +403,16 @@ class _ProductDetailState extends State<ProductDetail> {
                                                 const SizedBox(height: 8),
                                                 Text(
                                                   review['comment'],
-                                                  style: Theme.of(context).textTheme.bodyMedium,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodyMedium,
                                                 ),
                                                 const SizedBox(height: 8),
                                                 Text(
-                                                  DateFormat('dd MMM yyyy').format(
-                                                    DateTime.parse(review['created_at']),
+                                                  DateFormat('dd MMM yyyy')
+                                                      .format(
+                                                    DateTime.parse(
+                                                        review['created_at']),
                                                   ),
                                                   style: Theme.of(context)
                                                       .textTheme
@@ -426,7 +435,10 @@ class _ProductDetailState extends State<ProductDetail> {
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           child: Text(
                             'Anda telah membeli produk ini. Tambahkan ulasan di halaman transaksi.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
                                   color: Colors.green,
                                   fontStyle: FontStyle.italic,
                                 ),
@@ -488,17 +500,22 @@ class _ProductDetailState extends State<ProductDetail> {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => Cart(
-                        product: widget.product,
-                        quantity: quantity,
-                      ),
-                    ),
-                  );
-                },
+                onPressed: isOwnProduct
+                    ? () {
+                        showFloatingNotification(
+                            'Anda tidak dapat membeli produk Anda sendiri.');
+                      }
+                    : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => Cart(
+                              product: widget.product,
+                              quantity: quantity,
+                            ),
+                          ),
+                        );
+                      },
                 style: OutlinedButton.styleFrom(
                   side:
                       BorderSide(color: Theme.of(context).colorScheme.primary),
@@ -506,7 +523,12 @@ class _ProductDetailState extends State<ProductDetail> {
                 child: Text(
                   'Keranjang',
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
+                    color: isOwnProduct
+                        ? Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.5)
+                        : Theme.of(context).colorScheme.primary,
                     fontFamily: 'Poppins',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -517,12 +539,24 @@ class _ProductDetailState extends State<ProductDetail> {
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton(
-                onPressed: () {
-                  showFloatingNotification(
-                      'Fitur beli langsung belum diimplementasikan.');
-                },
+                onPressed: isOwnProduct
+                    ? () {
+                        showFloatingNotification(
+                            'Anda tidak dapat membeli produk Anda sendiri.');
+                      }
+                    : () {
+                        // Arahkan ke halaman checkout
+                        Navigator.pushNamed(context, '/checkout', arguments: {
+                          'product_id': widget.product.id,
+                          'product_name': widget.product.name,
+                          'price': widget.product.price,
+                          'quantity': quantity,
+                        });
+                      },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  backgroundColor: isOwnProduct
+                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.5)
+                      : Theme.of(context).colorScheme.primary,
                 ),
                 child: const Text(
                   'Beli',

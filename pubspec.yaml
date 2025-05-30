@@ -46,7 +46,9 @@ dependencies:
   image_picker: ^1.1.2
   image_cropper: ^8.0.2
   shared_preferences: ^2.5.3
-  
+  midtrans_snap: ^1.0.0
+  open_file: ^3.3.0
+
   flutter_bloc: ^8.1.6          # Untuk BLoC state management
   equatable: ^2.0.5             # Untuk perbandingan objek di BLoC
   cached_network_image: ^3.3.1 

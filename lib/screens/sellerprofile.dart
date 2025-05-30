@@ -6,7 +6,11 @@ class SellerProfileScreen extends StatefulWidget {
   final int sellerId;
   final String sellerName;
 
-  SellerProfileScreen({required this.sellerId, required this.sellerName});
+  const SellerProfileScreen({
+    super.key,
+    required this.sellerId,
+    required this.sellerName,
+  });
 
   @override
   _SellerProfileScreenState createState() => _SellerProfileScreenState();
@@ -14,7 +18,7 @@ class SellerProfileScreen extends StatefulWidget {
 
 class _SellerProfileScreenState extends State<SellerProfileScreen> {
   final ApiService apiService = ApiService();
-  Seller? seller;
+  Map<String, dynamic>? sellerData;
   bool isLoading = true;
   String errorMessage = '';
 
@@ -29,12 +33,9 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
     setState(() {
       isLoading = false;
       if (result['success']) {
-        seller = result['data'];
+        sellerData = result['data'];
       } else {
         errorMessage = result['message'];
-        if (result['navigateToLogin'] == true) {
-          Navigator.pushReplacementNamed(context, '/login');
-        }
       }
     });
   }
@@ -43,54 +44,32 @@ class _SellerProfileScreenState extends State<SellerProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profil Seller: ${seller?.brandName ?? widget.sellerName}'),
+        title: Text(widget.sellerName),
       ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.orange))
           : errorMessage.isNotEmpty
               ? Center(child: Text(errorMessage))
-              : Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Nama Brand: ${seller!.brandName}',
-                        style: Theme.of(context).textTheme.titleLarge,
+              : sellerData != null
+                  ? Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            sellerData!['brand_name'] ?? 'Nama Tidak Diketahui',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(sellerData!['description'] ?? ''),
+                          const SizedBox(height: 8),
+                          Text('Alamat: ${sellerData!['address'] ?? ''}'),
+                          Text('Email: ${sellerData!['contact_email'] ?? ''}'),
+                          Text('WhatsApp: ${sellerData!['contact_whatsapp'] ?? ''}'),
+                        ],
                       ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Deskripsi: ${seller!.description}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Alamat: ${seller!.address}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () async {
-                          final result = await apiService.startChat(widget.sellerId);
-                          if (result['success']) {
-                            Navigator.pushNamed(context, '/chat', arguments: {
-                              'chat_id': result['data']['chat_id'],
-                              'seller_id': result['data']['seller_id'],
-                              'seller_name': seller?.brandName ?? widget.sellerName,
-                            });
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(result['message'])),
-                            );
-                            if (result['navigateToLogin'] == true) {
-                              Navigator.pushReplacementNamed(context, '/login');
-                            }
-                          }
-                        },
-                        child: Text('Mulai Percakapan'),
-                      ),
-                    ],
-                  ),
-                ),
+                    )
+                  : const Center(child: Text('Data penjual tidak tersedia')),
     );
   }
 }

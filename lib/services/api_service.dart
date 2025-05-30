@@ -12,57 +12,41 @@ import '../models/faq.dart';
 class ApiService {
   static const String baseUrl = 'http://localhost:8000/api';
   static const String storageUrl = 'http://localhost:8000/storage';
-  //static const String baseUrl = 'http://10.0.2.2/api';
-  // static const String baseUrl = 'http://192.168.1.4:8000/api';
-  // static const String storageUrl = 'http://192.168.1.4:8000/storage';
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      var response = await http.post(
+      final response = await http.post(
         Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
+        body: jsonEncode({'email': email, 'password': password}),
       );
-
-      print('Status respons login: ${response.statusCode}');
-      print('Isi respons login: ${response.body}');
-
+      print('Login response status: ${response.statusCode}, body: ${response.body}'); // Debugging
       if (response.statusCode == 200) {
-        var responseData = jsonDecode(response.body);
-        if (responseData['status'] == 'success') {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('token', responseData['data']['token']);
-          var userData = responseData['data']['user'];
-          // Explicitly set is_seller as boolean
-          bool isSeller = responseData['is_seller'] == true ||
-              responseData['is_seller'] == 'true';
-          userData['is_seller'] = isSeller;
-          await prefs.setString('user', jsonEncode(userData));
-          return {
-            'success': true,
-            'message': 'Login berhasil.',
-          };
-        } else {
-          return {
-            'success': false,
-            'message': responseData['message'] ?? 'Login gagal.',
-          };
-        }
+        final data = jsonDecode(response.body);
+        final token = data['data']['token'];
+        final user = data['data']['user'];
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token); // Changed from 'auth_token' to 'token'
+        await prefs.setString('user', jsonEncode(user)); // Save user data
+        print('Login token saved: $token'); // Debugging
+        final savedToken = await _getToken();
+        print('Verified saved token: $savedToken'); // Debugging
+        return {
+          'success': true,
+          'message': 'Login berhasil',
+          'data': data['data'],
+        };
       } else {
+        final data = jsonDecode(response.body);
+        print('Login error: ${data['message']}'); // Debugging
         return {
           'success': false,
-          'message': 'Kesalahan server: ${response.statusCode}',
+          'message': data['message'] ?? 'Login gagal',
         };
       }
     } catch (e) {
-      print('Kesalahan saat login: $e');
-      return {
-        'success': false,
-        'message': 'Terjadi kesalahan: $e',
-      };
+      print('Login exception: $e'); // Debugging
+      return {'success': false, 'message': 'Terjadi kesalahan: $e'};
     }
   }
 
@@ -409,6 +393,88 @@ class ApiService {
     }
   }
 
+  Future<User?> getCurrentUser() async {
+    try {
+      // Asumsi: API endpoint untuk mendapatkan data user
+      final response = await http.get(
+        Uri.parse('$baseUrl/user/profile'),
+        headers: {
+          'Authorization': 'Bearer ${await _getToken()}',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return User.fromMap(jsonDecode(response.body)['data']);
+      }
+      return null;
+    } catch (e) {
+      print('Error getCurrentUser: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> createOrder({
+    required int userId,
+    required int productId,
+    required int quantity,
+    required double totalPrice,
+  }) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Silakan login terlebih dahulu',
+          'navigateToLogin': true,
+        };
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/orders'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'user_id': userId,
+          'product_id': productId,
+          'quantity': quantity,
+          'total_price': totalPrice,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'data': {
+            'order_id': data['data']['order_id'],
+            'message': 'Pembelian berhasil',
+          },
+        };
+      } else {
+        final data = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Gagal memproses pembelian',
+          'navigateToLogin': response.statusCode == 401,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan: $e',
+      };
+    }
+  }
+
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token'); // Changed from 'auth_token' to 'token'
+    print('Retrieved token: $token'); // Debugging
+    return token;
+  }
+
   // Fetch User Profile
   Future<Map<String, dynamic>> fetchUserProfile() async {
     try {
@@ -589,55 +655,26 @@ class ApiService {
   // Fetch Seller Profile
   Future<Map<String, dynamic>> fetchSellerProfile(int sellerId) async {
     try {
-      if (sellerId <= 0) {
-        return {
-          'success': false,
-          'message': 'ID penjual tidak valid.',
-        };
-      }
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
-
-      if (token == null) {
-        return {
-          'success': false,
-          'message': 'Token tidak ditemukan. Silakan login kembali.',
-          'navigateToLogin': true,
-        };
-      }
-
-      var response = await http.get(
+      final token = await _getToken();
+      final response = await http.get(
         Uri.parse('$baseUrl/sellers/$sellerId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+        headers: token != null ? {'Authorization': 'Bearer $token'} : {},
       );
-
-      print('Status respons ambil profil penjual: ${response.statusCode}');
-      print('Isi respons ambil profil penjual: ${response.body}');
-
       if (response.statusCode == 200) {
-        var responseData = jsonDecode(response.body);
-        final seller = Seller.fromJson(responseData['data']);
-        return {
-          'success': true,
-          'data': seller,
-        };
+        final data = jsonDecode(response.body);
+        return {'success': true, 'data': data['data']};
       } else {
-        var responseData = jsonDecode(response.body);
+        final data = jsonDecode(response.body);
+        print('Fetch seller error: ${data['message']}'); // Debugging
         return {
           'success': false,
-          'message': responseData['message'] ??
-              'Gagal memuat profil penjual. Status: ${response.statusCode}',
+          'message': data['message'] ?? 'Gagal memuat profil penjual',
+          'navigateToLogin': response.statusCode == 401,
         };
       }
     } catch (e) {
-      print('Kesalahan saat ambil profil penjual: $e');
-      return {
-        'success': false,
-        'message': 'Terjadi kesalahan: $e',
-      };
+      print('Fetch seller exception: $e'); // Debugging
+      return {'success': false, 'message': 'Terjadi kesalahan: $e'};
     }
   }
 
@@ -689,54 +726,45 @@ class ApiService {
   // Start Chat
   Future<Map<String, dynamic>> startChat(int sellerId) async {
     try {
-      if (sellerId <= 0) {
-        return {
-          'success': false,
-          'message': 'ID penjual tidak valid.',
-        };
-      }
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
-
+      final token = await _getToken();
       if (token == null) {
+        print('No token for startChat'); // Debugging
         return {
           'success': false,
-          'message': 'Token tidak ditemukan. Silakan login kembali.',
+          'message': 'Silakan login terlebih dahulu',
           'navigateToLogin': true,
         };
       }
-
-      var response = await http.post(
+      final response = await http.post(
         Uri.parse('$baseUrl/chats/start'),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'seller_id': sellerId,
-        }),
+        body: jsonEncode({'seller_id': sellerId}),
       );
-
-      print('Status respons mulai percakapan: ${response.statusCode}');
-      print('Isi respons mulai percakapan: ${response.body}');
-
+      print('Start chat response status: ${response.statusCode}'); // Debugging
       if (response.statusCode == 201) {
-        var responseData = jsonDecode(response.body);
+        final data = jsonDecode(response.body);
         return {
           'success': true,
-          'message': responseData['message'] ?? 'Percakapan berhasil dimulai.',
-          'data': responseData['data'],
+          'data': {
+            'chat_id': data['data']['chat_id'],
+            'seller_id': data['data']['seller_id'],
+            'seller_name': data['data']['seller_name'],
+          },
         };
       } else {
-        var responseData = jsonDecode(response.body);
+        final data = jsonDecode(response.body);
+        print('Start chat error: ${data['message']}'); // Debugging
         return {
           'success': false,
-          'message': responseData['message'] ??
-              'Gagal memulai percakapan. Status: ${response.statusCode}',
+          'message': data['message'] ?? 'Gagal memulai chat',
+          'navigateToLogin': response.statusCode == 401,
         };
       }
     } catch (e) {
-      print('Kesalahan saat mulai percakapan: $e');
+      print('Start chat exception: $e'); // Debugging
       return {
         'success': false,
         'message': 'Terjadi kesalahan: $e',
@@ -973,54 +1001,43 @@ class ApiService {
 // fetchMessages
   Future<Map<String, dynamic>> fetchMessages(int chatId) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
-
+      final token = await _getToken();
       if (token == null) {
+        print('No token for fetchMessages'); // Debugging
         return {
           'success': false,
-          'message': 'Token tidak ditemukan. Silakan login kembali.',
+          'message': 'Silakan login terlebih dahulu',
           'navigateToLogin': true,
         };
       }
-
-      var response = await http.get(
+      final response = await http.get(
         Uri.parse('$baseUrl/chats/$chatId/messages'),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
       );
-
-      print('Status respons ambil pesan: ${response.statusCode}');
-      print('Isi respons ambil pesan: ${response.body}');
-
+      print(
+          'Fetch messages response status: ${response.statusCode}'); // Debugging
       if (response.statusCode == 200) {
-        var responseData = jsonDecode(response.body);
-        if (responseData['data'] == null) {
-          return {
-            'success': true,
-            'data': [],
-            'message': 'Tidak ada pesan tersedia.',
-          };
-        }
-        List<Message> messages = (responseData['data'] as List).map((json) {
-          print('Parsing pesan: $json');
-          return Message.fromJson(json);
-        }).toList();
+        final data = jsonDecode(response.body);
         return {
           'success': true,
-          'data': messages,
-          'message': 'Pesan berhasil diambil.',
+          'data': (data['data'] as List)
+              .map((msg) => Message.fromJson(msg))
+              .toList(),
         };
       } else {
+        final data = jsonDecode(response.body);
+        print('Fetch messages error: ${data['message']}'); // Debugging
         return {
           'success': false,
-          'message': 'Gagal memuat pesan. Status: ${response.statusCode}',
+          'message': data['message'] ?? 'Gagal memuat pesan',
+          'navigateToLogin': response.statusCode == 401,
         };
       }
     } catch (e) {
-      print('Kesalahan saat ambil pesan: $e');
+      print('Fetch messages exception: $e'); // Debugging
       return {
         'success': false,
         'message': 'Terjadi kesalahan: $e',
@@ -1077,6 +1094,86 @@ class ApiService {
         'success': false,
         'message': 'Terjadi kesalahan: $e',
       };
+    }
+  }
+  // ... (kode existing lainnya tetap sama)
+
+  Future<Map<String, dynamic>> createTransaction(Map<String, dynamic> data) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Silakan login terlebih dahulu',
+          'navigateToLogin': true,
+        };
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/transactions'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'product_id': data['product_id'],
+          'quantity': data['quantity'],
+        }),
+      );
+
+      print('Status respons transaksi: ${response.statusCode}');
+      print('Isi respons transaksi: ${response.body}');
+
+      if (response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        return {
+          'success': true,
+          'message': 'Transaksi berhasil dibuat.',
+          'data': responseData['data'],
+        };
+      } else {
+        final responseData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Gagal membuat transaksi.',
+          'navigateToLogin': response.statusCode == 401,
+        };
+      }
+    } catch (e) {
+      print('Kesalahan saat membuat transaksi: $e');
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan: $e',
+      };
+    }
+  }
+
+  Future<void> downloadFile(String transactionCode) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Silakan login terlebih dahulu');
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/transactions/$transactionCode/download'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Status respons download: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        // Placeholder: Tangani file download
+        // Contoh: saveFile(response.bodyBytes, 'downloaded_file');
+      } else {
+        final responseData = jsonDecode(response.body);
+        throw Exception(responseData['message'] ?? 'Gagal mengunduh file.');
+      }
+    } catch (e) {
+      print('Kesalahan saat mengunduh file: $e');
+      throw Exception('Terjadi kesalahan: $e');
     }
   }
 
