@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:cuan_space/models/product.dart'; // Impor model Product dari models
+import 'package:cuan_space/models/product.dart';
 import 'package:cuan_space/services/api_service.dart';
 import 'package:cuan_space/screens/cart.dart';
 import 'package:cuan_space/screens/settings.dart';
 import 'package:cuan_space/main.dart';
+import 'package:intl/intl.dart';
 
 class ProductDetail extends StatefulWidget {
   final Product product;
@@ -16,6 +17,33 @@ class ProductDetail extends StatefulWidget {
 
 class _ProductDetailState extends State<ProductDetail> {
   int quantity = 1;
+  final ApiService apiService = ApiService();
+  List<dynamic> reviews = [];
+  bool hasPurchased = false;
+  bool isLoadingReviews = true;
+  String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    fetchReviews();
+  }
+
+  Future<void> fetchReviews() async {
+    final result = await apiService.fetchReviews(widget.product.id);
+    setState(() {
+      isLoadingReviews = false;
+      if (result['success']) {
+        reviews = result['data']['reviews'];
+        hasPurchased = result['data']['has_purchased'] ?? false;
+      } else {
+        errorMessage = result['message'];
+        if (result['navigateToLogin'] == true) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
+      }
+    });
+  }
 
   void showFloatingNotification(String message) {
     final overlayEntry = OverlayEntry(
@@ -146,7 +174,7 @@ class _ProductDetailState extends State<ProductDetail> {
                               color: Colors.yellow, size: 20),
                           const SizedBox(width: 4),
                           Text(
-                            '4.9 373 rating • 246 ulasan',
+                            '4.9 373 rating • ${reviews.length} ulasan',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
@@ -220,39 +248,190 @@ class _ProductDetailState extends State<ProductDetail> {
                             ),
                       ),
                       const SizedBox(height: 16),
-                      Center(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            if (widget.product.sellerId == 0) {
-                              showFloatingNotification(
-                                  'Seller tidak ditemukan');
-                              return;
-                            }
-                            Navigator.pushNamed(
-                              context,
-                              '/seller-profile',
-                              arguments: widget.product.sellerId,
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: darkOrange,
-                            foregroundColor: softWhite,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 32, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () {
+                              if (widget.product.sellerId == 0) {
+                                showFloatingNotification(
+                                    'Seller tidak ditemukan');
+                                return;
+                              }
+                              Navigator.pushNamed(
+                                context,
+                                '/seller-profile',
+                                arguments: widget.product.sellerId,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: darkOrange,
+                              foregroundColor: softWhite,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Lihat Profil Seller',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Poppins',
+                              ),
                             ),
                           ),
-                          child: const Text(
-                            'Lihat Profil Seller',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Poppins',
+                          ElevatedButton(
+                            onPressed: widget.product.sellerId <= 0
+                                ? null // Nonaktifkan tombol jika sellerId tidak valid
+                                : () {
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/seller-profile',
+                                      arguments: widget.product.sellerId,
+                                    );
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: darkOrange,
+                              foregroundColor: softWhite,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
+                            child: const Text(
+                              'Lihat Profil Penjual',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Poppins',
+                              ),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: widget.product.sellerId <= 0
+                                ? null // Nonaktifkan tombol jika sellerId tidak valid
+                                : () async {
+                                    final result = await apiService.startChat(widget.product.sellerId);
+                                    if (result['success']) {
+                                      Navigator.pushNamed(context, '/chat', arguments: {
+                                        'chat_id': result['data']['chat_id'],
+                                        'seller_id': result['data']['seller_id'],
+                                        'seller_name': result['data']['seller_name'] ?? 'Penjual Tidak Diketahui',
+                                      });
+                                    } else {
+                                      showFloatingNotification(result['message']);
+                                      if (result['navigateToLogin'] == true) {
+                                        Navigator.pushReplacementNamed(context, '/login');
+                                      }
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: darkOrange,
+                              foregroundColor: softWhite,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Chat Penjual',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Poppins',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Ulasan Produk',
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                      ),
+                      const SizedBox(height: 8),
+                      isLoadingReviews
+                          ? Center(child: CircularProgressIndicator(color: darkOrange))
+                          : errorMessage.isNotEmpty
+                              ? Center(child: Text(errorMessage))
+                              : reviews.isEmpty
+                                  ? Center(child: Text('Belum ada ulasan untuk produk ini.'))
+                                  : Column(
+                                      children: reviews.map((review) {
+                                        return Card(
+                                          margin: const EdgeInsets.symmetric(vertical: 8),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(12),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      review['user']['name'] ?? 'Anonim',
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodyMedium
+                                                          ?.copyWith(
+                                                            fontWeight: FontWeight.w600,
+                                                          ),
+                                                    ),
+                                                    const Spacer(),
+                                                    Row(
+                                                      children: List.generate(
+                                                        review['rating'],
+                                                        (index) => Icon(
+                                                          Icons.star,
+                                                          color: Colors.yellow,
+                                                          size: 16,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  review['comment'],
+                                                  style: Theme.of(context).textTheme.bodyMedium,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  DateFormat('dd MMM yyyy').format(
+                                                    DateTime.parse(review['created_at']),
+                                                  ),
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.7),
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                      if (hasPurchased)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Text(
+                            'Anda telah membeli produk ini. Tambahkan ulasan di halaman transaksi.',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Colors.green,
+                                  fontStyle: FontStyle.italic,
+                                ),
                           ),
                         ),
-                      ),
                       const SizedBox(height: 80),
                     ],
                   ),

@@ -33,9 +33,11 @@ class _NotificationState extends State<Notification>
   }
 
   void _startPolling() {
-    _pollingTimer = Timer.periodic(Duration(seconds: 10), (timer) {
-      fetchNotifications(silent: true);
-      fetchChats(silent: true);
+    _pollingTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+      if (mounted) {
+        fetchNotifications(silent: true);
+        fetchChats(silent: true);
+      }
     });
   }
 
@@ -75,10 +77,13 @@ class _NotificationState extends State<Notification>
     try {
       final result = await apiService.fetchNotifications();
       if (result['success']) {
-        setState(() {
-          notifications = result['data'];
-          if (!silent) isLoadingNotifications = false;
-        });
+        final newNotifications = result['data'];
+        if (!_isNotificationsEqual(notifications, newNotifications)) {
+          setState(() {
+            notifications = newNotifications;
+            if (!silent) isLoadingNotifications = false;
+          });
+        }
       } else {
         setState(() {
           if (!silent) isLoadingNotifications = false;
@@ -97,6 +102,17 @@ class _NotificationState extends State<Notification>
         showFloatingNotification('Gagal memuat notifikasi: $e');
       }
     }
+  }
+
+  bool _isNotificationsEqual(List<dynamic> oldList, List<dynamic> newList) {
+    if (oldList.length != newList.length) return false;
+    for (int i = 0; i < oldList.length; i++) {
+      if (oldList[i]['id'] != newList[i]['id'] ||
+          oldList[i]['read'] != newList[i]['read']) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<void> fetchChats({bool silent = false}) async {
@@ -149,6 +165,7 @@ class _NotificationState extends State<Notification>
 
   @override
   Widget build(BuildContext context) {
+    print('Notifications di build: $notifications');
     return Scaffold(
       appBar: AppBar(
         title: Text('Notifikasi & Pesan',
@@ -220,9 +237,15 @@ class _NotificationState extends State<Notification>
                       itemCount: notifications.length,
                       itemBuilder: (context, index) {
                         final notification = notifications[index];
+                        if (notification['title'] == null || notification['description'] == null) {
+                          return ListTile(
+                            title: Text('Notifikasi Tidak Valid'),
+                            subtitle: Text('Data tidak lengkap'),
+                          );
+                        }
                         IconData icon;
                         Color iconColor = darkOrange;
-                        switch (notification['penerima']) {
+                        switch (notification['type'] ?? 'unknown') {
                           case 'chat':
                             icon = Icons.message;
                             break;
@@ -238,12 +261,18 @@ class _NotificationState extends State<Notification>
                           default:
                             icon = Icons.info;
                         }
-                        if (notification['status'] == 'draft' ||
-                            notification['read'] == true) {
-                          iconColor = Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withOpacity(0.5);
+                        if (notification['status'] == 'draft' || notification['read'] == true) {
+                          iconColor = Theme.of(context).colorScheme.onSurface.withOpacity(0.5);
+                        }
+
+                        String formattedTime = 'Waktu tidak tersedia';
+                        if (notification['time'] != null && notification['time'].isNotEmpty) {
+                          try {
+                            final dateTime = DateTime.parse(notification['time']);
+                            formattedTime = DateFormat('dd MMM yyyy, HH:mm').format(dateTime);
+                          } catch (e) {
+                            print('Error parsing notification time: ${notification['time']}');
+                          }
                         }
 
                         return Card(
@@ -251,31 +280,17 @@ class _NotificationState extends State<Notification>
                           child: ListTile(
                             contentPadding: const EdgeInsets.all(10),
                             leading: CircleAvatar(
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.background,
-                              child: Icon(
-                                icon,
-                                color: iconColor,
-                                size: 20,
-                              ),
+                              backgroundColor: Theme.of(context).colorScheme.background,
+                              child: Icon(icon, color: iconColor, size: 20),
                             ),
                             title: Text(
-                              notification['judul'],
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
+                              notification['title']?.toString() ?? 'Tanpa Judul',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13,
-                                    color: notification['status'] == 'draft' ||
-                                            notification['read'] == true
-                                        ? Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withOpacity(0.5)
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .onSurface,
+                                    color: notification['status'] == 'draft' || notification['read'] == true
+                                        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.5)
+                                        : Theme.of(context).colorScheme.onSurface,
                                   ),
                             ),
                             subtitle: Column(
@@ -283,7 +298,7 @@ class _NotificationState extends State<Notification>
                               children: [
                                 const SizedBox(height: 3),
                                 Text(
-                                  notification['pesan'],
+                                  notification['description']?.toString() ?? 'Tanpa Pesan',
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodySmall
@@ -297,11 +312,7 @@ class _NotificationState extends State<Notification>
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
-                                  notification['created_at'] != null
-                                      ? DateFormat('dd MMM yyyy, HH:mm').format(
-                                          DateTime.parse(
-                                              notification['created_at']))
-                                      : 'Waktu tidak tersedia',
+                                  formattedTime,
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodySmall
@@ -327,49 +338,33 @@ class _NotificationState extends State<Notification>
                               ],
                             ),
                             trailing: notification['read'] == true
-                                ? Icon(Icons.check_circle,
-                                    color: Colors.green, size: 20)
+                                ? Icon(Icons.check_circle, color: Colors.green, size: 20)
                                 : IconButton(
-                                    icon: Icon(Icons.circle,
-                                        color: Colors.blue, size: 20),
+                                    icon: Icon(Icons.circle, color: Colors.blue, size: 20),
                                     onPressed: () async {
-                                      final result = await apiService
-                                          .markNotificationAsRead(
-                                              notification['id']);
+                                      final result = await apiService.markNotificationAsRead(notification['id']);
                                       if (result['success']) {
                                         setState(() {
                                           notification['read'] = true;
                                         });
-                                        showFloatingNotification(
-                                            'Notifikasi ditandai sebagai dibaca.');
+                                        showFloatingNotification('Notifikasi ditandai sebagai dibaca.');
                                       } else {
-                                        showFloatingNotification(
-                                            result['message']);
+                                        showFloatingNotification(result['message']);
                                         if (result['navigateToLogin'] == true) {
-                                          Navigator.pushReplacementNamed(
-                                              context, '/login');
+                                          Navigator.pushReplacementNamed(context, '/login');
                                         }
                                       }
                                     },
                                   ),
                             onTap: () {
-                              switch (notification['penerima']) {
-                                case 'chat':
-                                  Navigator.pushNamed(context, '/chat',
-                                      arguments: {
-                                        'chat_id': notification['chat_id'] ?? 0,
-                                        'seller_id':
-                                            notification['seller_id'] ?? 0,
-                                        'seller_name': 'Seller',
-                                      });
-                                  break;
-                                case 'khusus':
-                                  showFloatingNotification(
-                                      'Notifikasi khusus: ${notification['pesan']}');
-                                  break;
-                                default:
-                                  showFloatingNotification(
-                                      'Detail: ${notification['pesan']}');
+                              if (notification['chat_id'] != null && notification['chat_id'] != 0) {
+                                Navigator.pushNamed(context, '/chat', arguments: {
+                                  'chat_id': notification['chat_id'],
+                                  'seller_id': notification['seller_id'] ?? 0,
+                                  'seller_name': notification['seller_id'] != null ? 'Seller' : 'Unknown',
+                                });
+                              } else {
+                                showFloatingNotification('Detail: ${notification['description']}');
                               }
                             },
                           ),
@@ -429,12 +424,20 @@ class _NotificationState extends State<Notification>
                       itemCount: chats.length,
                       itemBuilder: (context, index) {
                         final chat = chats[index];
+                        String formattedTime = 'Waktu tidak tersedia';
+                        if (chat.lastMessageTime.isNotEmpty) {
+                          try {
+                            final dateTime = DateTime.parse(chat.lastMessageTime);
+                            formattedTime = DateFormat('dd MMM yyyy, HH:mm').format(dateTime);
+                          } catch (e) {
+                            print('Error parsing chat lastMessageTime: ${chat.lastMessageTime}');
+                          }
+                        }
                         return Card(
                           color: Theme.of(context).colorScheme.surface,
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.background,
+                              backgroundColor: Theme.of(context).colorScheme.background,
                               child: Icon(
                                 Icons.store,
                                 color: darkOrange,
@@ -451,24 +454,41 @@ class _NotificationState extends State<Notification>
                                     fontSize: 13,
                                   ),
                             ),
-                            subtitle: Text(
-                              chat.lastMessage,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withOpacity(0.7),
-                                    fontSize: 11,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Dari: ${chat.senderName}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.7),
+                                        fontSize: 11,
+                                      ),
+                                ),
+                                Text(
+                                  chat.lastMessage.isNotEmpty ? chat.lastMessage : 'Belum ada pesan',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                            .withOpacity(0.7),
+                                        fontSize: 11,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
                             trailing: Text(
-                              DateFormat('dd MMM yyyy, HH:mm')
-                                  .format(DateTime.parse(chat.lastMessageTime)),
+                              formattedTime,
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall
@@ -497,19 +517,19 @@ class _NotificationState extends State<Notification>
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home, size: 24),
-            label: 'Beranda', // Diubah dari 'Home'
+            label: 'Beranda',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.explore, size: 24),
-            label: 'Jelajah', // Diubah dari 'Explore'
+            label: 'Jelajah',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications, size: 24),
-            label: 'Notifikasi', // Diubah dari 'Notifications'
+            label: 'Notifikasi',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person, size: 24),
-            label: 'Profil', // Diubah dari 'Profile'
+            label: 'Profil',
           ),
         ],
         currentIndex: _selectedIndex,

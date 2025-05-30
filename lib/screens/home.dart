@@ -65,11 +65,12 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     });
   }
 
-  Future<void> fetchData() async {
-    setState(() {
-      isLoading = true;
-    });
+Future<void> fetchData() async {
+  setState(() {
+    isLoading = true;
+  });
 
+  try {
     final kategoriResult = await _apiService.fetchKategoris();
     if (kategoriResult['navigateToLogin'] == true) {
       Navigator.pushNamed(context, '/login');
@@ -84,24 +85,35 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
     setState(() {
       if (kategoriResult['success']) {
-        kategoris = (kategoriResult['data'] as List)
-            .map((json) => Kategori.fromJson(json))
-            .toList();
+        print('Kategori diterima: ${kategoriResult['data']}');
+        kategoris = kategoriResult['data'] as List<Kategori>;
+        if (kategoris.isEmpty) {
+          showFloatingNotification('Tidak ada kategori tersedia.');
+        }
       } else {
-        showFloatingNotification(kategoriResult['message']);
+        showFloatingNotification(kategoriResult['message'] ?? 'Gagal memuat kategori.');
       }
 
       if (productResult['success']) {
-        products = (productResult['data'] as List)
-            .map((json) => Product.fromJson(json))
-            .toList();
+        print('Produk diterima: ${productResult['data']}');
+        products = productResult['data'] as List<Product>;
+        if (products.isEmpty) {
+          showFloatingNotification('Tidak ada produk tersedia.');
+        }
       } else {
-        showFloatingNotification(productResult['message']);
+        showFloatingNotification(productResult['message'] ?? 'Gagal memuat produk.');
       }
 
       isLoading = false;
     });
+  } catch (e) {
+    print('Error saat fetchData: $e');
+    setState(() {
+      isLoading = false;
+    });
+    showFloatingNotification('Terjadi kesalahan: $e');
   }
+}
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -480,8 +492,7 @@ class ProductCard extends StatefulWidget {
   _ProductCardState createState() => _ProductCardState();
 }
 
-class _ProductCardState extends State<ProductCard>
-    with SingleTickerProviderStateMixin {
+class _ProductCardState extends State<ProductCard> with SingleTickerProviderStateMixin {
   bool _isHovered = false;
   double _opacity = 0.0;
 
@@ -497,6 +508,7 @@ class _ProductCardState extends State<ProductCard>
 
   @override
   Widget build(BuildContext context) {
+    print('Memuat gambar produk: ${widget.product.image}'); // Debugging
     return GestureDetector(
       onTapDown: (_) {
         setState(() {
@@ -527,8 +539,7 @@ class _ProductCardState extends State<ProductCard>
           child: Card(
             color: Theme.of(context).colorScheme.surface,
             elevation: _isHovered ? 6 : 2,
-            shadowColor:
-                Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+            shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
@@ -537,13 +548,13 @@ class _ProductCardState extends State<ProductCard>
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(14)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                     child: Image.network(
-                      '${ApiService.storageUrl}/${widget.product.image}',
+                      widget.product.image,
                       fit: BoxFit.cover,
                       width: double.infinity,
                       errorBuilder: (context, error, stackTrace) {
+                        print('Gagal memuat gambar: ${widget.product.image}, error: $error');
                         return Container(
                           color: Theme.of(context).colorScheme.background,
                           child: Center(
@@ -552,6 +563,18 @@ class _ProductCardState extends State<ProductCard>
                               size: 50,
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    (loadingProgress.expectedTotalBytes ?? 1)
+                                : null,
+                            color: darkOrange,
                           ),
                         );
                       },
@@ -585,10 +608,7 @@ class _ProductCardState extends State<ProductCard>
                       Text(
                         widget.product.description,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.7),
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                               fontSize: 11,
                             ),
                         maxLines: 2,
