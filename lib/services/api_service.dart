@@ -20,13 +20,15 @@ class ApiService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
-      print('Login response status: ${response.statusCode}, body: ${response.body}'); // Debugging
+      print(
+          'Login response status: ${response.statusCode}, body: ${response.body}'); // Debugging
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final token = data['data']['token'];
         final user = data['data']['user'];
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token); // Changed from 'auth_token' to 'token'
+        await prefs.setString(
+            'token', token); // Changed from 'auth_token' to 'token'
         await prefs.setString('user', jsonEncode(user)); // Save user data
         print('Login token saved: $token'); // Debugging
         final savedToken = await _getToken();
@@ -218,7 +220,93 @@ class ApiService {
       };
     }
   }
+  // Fetch Products with Filters
+  Future<Map<String, dynamic>> fetchProductsFiltered({
+    String? kategori,
+    String? searchQuery,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Token tidak ditemukan. Silakan login kembali.',
+          'navigateToLogin': true,
+        };
+      }
 
+      // Build query params
+      final Map<String, String> queryParams = {};
+      if (kategori != null && kategori != 'all') {
+        queryParams['kategori'] = kategori;
+      }
+      if (searchQuery?.isNotEmpty == true) {
+        queryParams['search'] = searchQuery!;
+      }
+
+      final uri =
+          Uri.parse('$baseUrl/products').replace(queryParameters: queryParams);
+
+      var response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Status respons ambil produk: ${response.statusCode}');
+      print('Isi respons ambil produk: ${response.body}');
+
+      if (response.statusCode == 200) {
+        var responseData = jsonDecode(response.body);
+        if (responseData['data'] == null || responseData['data'].isEmpty) {
+          return {
+            'success': true,
+            'data': [],
+            'message': 'Tidak ada produk tersedia.',
+          };
+        }
+
+        List<Product> products =
+            (responseData['data'] as List<dynamic>).map((json) {
+          if (json is Map<String, dynamic>) {
+            final productJson = json;
+
+            // Add full image URL if thumbnail exists
+            if (productJson['thumbnail'] != null &&
+                !productJson['thumbnail'].toString().startsWith('http')) {
+              productJson['image'] = '$storageUrl/${productJson['thumbnail']}';
+            } else {
+              productJson['image'] = 'https://via.placeholder.com/300x200';
+            }
+
+            return Product.fromJson(productJson);
+          }
+          throw FormatException('Data produk tidak valid: $json');
+        }).toList();
+
+        return {
+          'success': true,
+          'data': products,
+          'message': 'Produk berhasil diambil.',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Gagal memuat produk: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print('Kesalahan saat ambil produk: $e');
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan: $e',
+      };
+    }
+  }
+  
   // Fetch Kategoris
   Future<Map<String, dynamic>> fetchKategoris() async {
     try {
@@ -470,7 +558,8 @@ class ApiService {
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token'); // Changed from 'auth_token' to 'token'
+    final token =
+        prefs.getString('token'); // Changed from 'auth_token' to 'token'
     print('Retrieved token: $token'); // Debugging
     return token;
   }
@@ -1098,7 +1187,8 @@ class ApiService {
   }
   // ... (kode existing lainnya tetap sama)
 
-  Future<Map<String, dynamic>> createTransaction(Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> createTransaction(
+      Map<String, dynamic> data) async {
     try {
       final token = await _getToken();
       if (token == null) {

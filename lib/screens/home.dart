@@ -65,55 +65,62 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     });
   }
 
-Future<void> fetchData() async {
-  setState(() {
-    isLoading = true;
-  });
-
-  try {
-    final kategoriResult = await _apiService.fetchKategoris();
-    if (kategoriResult['navigateToLogin'] == true) {
-      Navigator.pushNamed(context, '/login');
-      return;
-    }
-
-    final productResult = await _apiService.fetchProducts();
-    if (productResult['navigateToLogin'] == true) {
-      Navigator.pushNamed(context, '/login');
-      return;
-    }
-
+  Future<void> fetchData() async {
     setState(() {
-      if (kategoriResult['success']) {
-        print('Kategori diterima: ${kategoriResult['data']}');
-        kategoris = kategoriResult['data'] as List<Kategori>;
-        if (kategoris.isEmpty) {
-          showFloatingNotification('Tidak ada kategori tersedia.');
-        }
-      } else {
-        showFloatingNotification(kategoriResult['message'] ?? 'Gagal memuat kategori.');
+      isLoading = true;
+    });
+    try {
+      final kategoriResult = await _apiService.fetchKategoris();
+      if (kategoriResult['navigateToLogin'] == true) {
+        Navigator.pushNamed(context, '/login');
+        return;
       }
 
-      if (productResult['success']) {
-        print('Produk diterima: ${productResult['data']}');
-        products = productResult['data'] as List<Product>;
-        if (products.isEmpty) {
-          showFloatingNotification('Tidak ada produk tersedia.');
-        }
-      } else {
-        showFloatingNotification(productResult['message'] ?? 'Gagal memuat produk.');
+      final productResult = await _apiService.fetchProductsFiltered(
+        kategori: _selectedCategoryIndex != null
+            ? kategoris[_selectedCategoryIndex!].id.toString()
+            : null,
+        searchQuery: _searchQuery,
+      );
+
+      if (productResult['navigateToLogin'] == true) {
+        Navigator.pushNamed(context, '/login');
+        return;
       }
 
-      isLoading = false;
-    });
-  } catch (e) {
-    print('Error saat fetchData: $e');
-    setState(() {
-      isLoading = false;
-    });
-    showFloatingNotification('Terjadi kesalahan: $e');
+      setState(() {
+        if (kategoriResult['success']) {
+          print('Kategori diterima: ${kategoriResult['data']}');
+          kategoris = kategoriResult['data'] as List<Kategori>;
+          if (kategoris.isEmpty) {
+            showFloatingNotification('Tidak ada kategori tersedia.');
+          }
+        } else {
+          showFloatingNotification(
+              kategoriResult['message'] ?? 'Gagal memuat kategori.');
+        }
+
+        if (productResult['success']) {
+          print('Produk diterima: ${productResult['data']}');
+          products = productResult['data'] as List<Product>;
+          if (products.isEmpty) {
+            showFloatingNotification('Tidak ada produk tersedia.');
+          }
+        } else {
+          showFloatingNotification(
+              productResult['message'] ?? 'Gagal memuat produk.');
+        }
+
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error saat fetchData: $e');
+      setState(() {
+        isLoading = false;
+      });
+      showFloatingNotification('Terjadi kesalahan: $e');
+    }
   }
-}
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -161,14 +168,12 @@ Future<void> fetchData() async {
 
   List<Product> get filteredProducts {
     var filtered = products;
-
     if (_selectedCategoryIndex != null) {
       filtered = filtered
           .where((product) =>
               product.kategoriId == kategoris[_selectedCategoryIndex!].id)
           .toList();
     }
-
     if (_searchQuery.isNotEmpty) {
       filtered = filtered
           .where((product) =>
@@ -176,7 +181,6 @@ Future<void> fetchData() async {
               product.description.toLowerCase().contains(_searchQuery))
           .toList();
     }
-
     return filtered;
   }
 
@@ -492,7 +496,8 @@ class ProductCard extends StatefulWidget {
   _ProductCardState createState() => _ProductCardState();
 }
 
-class _ProductCardState extends State<ProductCard> with SingleTickerProviderStateMixin {
+class _ProductCardState extends State<ProductCard>
+    with SingleTickerProviderStateMixin {
   bool _isHovered = false;
   double _opacity = 0.0;
 
@@ -539,7 +544,8 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
           child: Card(
             color: Theme.of(context).colorScheme.surface,
             elevation: _isHovered ? 6 : 2,
-            shadowColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+            shadowColor:
+                Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
@@ -548,13 +554,15 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(14)),
                     child: Image.network(
                       widget.product.image,
                       fit: BoxFit.cover,
                       width: double.infinity,
                       errorBuilder: (context, error, stackTrace) {
-                        print('Gagal memuat gambar: ${widget.product.image}, error: $error');
+                        print(
+                            'Gagal memuat gambar: ${widget.product.image}, error: $error');
                         return Container(
                           color: Theme.of(context).colorScheme.background,
                           child: Center(
@@ -586,14 +594,49 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.product.name,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.product.name,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      // Bintang rating
+                      Row(
+                        children: List.generate(
+                          5,
+                          (index) => Icon(
+                            index < widget.product.averageRating.floor()
+                                ? Icons.star
+                                : widget.product.averageRating - index >= 0.5
+                                    ? Icons.star_half
+                                    : Icons.star_border,
+                            color: Colors.orange,
+                            size: 14,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${widget.product.reviewCount} ulasan',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.6),
+                              fontSize: 10,
+                            ),
                       ),
                       const SizedBox(height: 3),
                       Text(
@@ -605,15 +648,6 @@ class _ProductCardState extends State<ProductCard> with SingleTickerProviderStat
                             ),
                       ),
                       const SizedBox(height: 3),
-                      Text(
-                        widget.product.description,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                              fontSize: 11,
-                            ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
                     ],
                   ),
                 ),

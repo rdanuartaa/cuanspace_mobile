@@ -15,6 +15,8 @@ class Product {
   final int? purchaseCount;
   final int? viewCount;
   final Kategori? kategori;
+  final double averageRating; // Rata-rata rating
+  final int reviewCount;
 
   Product({
     required this.id,
@@ -29,6 +31,8 @@ class Product {
     this.purchaseCount,
     this.viewCount,
     this.kategori,
+    this.averageRating = 0.0,
+    this.reviewCount = 0,
   });
 
   String get formattedPrice {
@@ -66,6 +70,8 @@ class Product {
       kategori: json['kategori'] != null && json['kategori'] is Map
           ? Kategori.fromJson(json['kategori'] as Map<String, dynamic>)
           : null,
+      averageRating: double.tryParse(json['average_rating'].toString()) ?? 0.0,
+      reviewCount: json['review_count'] ?? 0,
     );
   }
 
@@ -83,6 +89,8 @@ class Product {
       'purchase_count': purchaseCount,
       'view_count': viewCount,
       'kategori': kategori?.toJson(),
+      'average_rating': averageRating,
+      'review_count': reviewCount,
     };
   }
 }

@@ -145,50 +145,6 @@ class _ProductDetailState extends State<ProductDetail> {
                             ),
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Text(
-                            'Jumlah: ',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.remove,
-                                color: Theme.of(context).iconTheme.color),
-                            onPressed: isOwnProduct
-                                ? null
-                                : () {
-                                    if (quantity > 1) {
-                                      setState(() {
-                                        quantity--;
-                                      });
-                                    }
-                                  },
-                          ),
-                          Text(
-                            '$quantity',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(fontSize: 16),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.add,
-                                color: Theme.of(context).iconTheme.color),
-                            onPressed: isOwnProduct
-                                ? null
-                                : () {
-                                    setState(() {
-                                      quantity++;
-                                    });
-                                  },
-                          ),
-                        ],
-                      ),
                       if (isOwnProduct)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
