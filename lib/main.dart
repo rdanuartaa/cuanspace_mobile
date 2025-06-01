@@ -18,7 +18,10 @@ import 'screens/about_us.dart';
 import 'screens/help_center.dart';
 import 'screens/edit_profile.dart';
 import 'screens/orderconfirmation.dart';
+import 'screens/checkout.dart';
+import 'screens/submitreview.dart';
 import 'screens/chat.dart';
+import 'screens/order_history.dart';
 import 'models/user_model.dart';
 import 'models/user_detail_model.dart';
 import 'models/product.dart';
@@ -189,11 +192,13 @@ class MyApp extends StatelessWidget {
       initialRoute: '/splash',
       routes: {
         '/splash': (context) => const SplashScreen(),
-        '/welcome': (context) =>  Welcome(),
-        '/login': (context) =>  Login(),
-        '/register': (context) =>  Register(),
+        '/welcome': (context) => Welcome(),
+        '/login': (context) => Login(),
+        '/register': (context) => Register(),
+        '/forgot-password': (context) => const ForgotPassword(),
+        '/reset-password': (context) => const ResetPassword(),
         '/home': (context) => const Home(),
-        '/explore': (context) => const Explore(),
+        '/trending': (context) => const Trending(),
         '/notification': (context) => const NotificationScreen.Notification(),
         '/profile': (context) => const Profile(),
         '/product_detail': (context) {
@@ -215,11 +220,12 @@ class MyApp extends StatelessWidget {
           );
         },
         '/cart': (context) => const Cart(),
-        '/forgot-password': (context) => const ForgotPassword(),
-        '/reset-password': (context) => const ResetPassword(),
+        '/checkout': (context) => const Checkout(),
+        '/order-confirmation': (context) => const OrderConfirmation(),
         '/settings': (context) => const SettingsPage(),
         '/about_us': (context) =>  AboutUsPage(),
         '/help_center': (context) => HelpCenterPage(),
+        '/order-history': (context) => const OrderHistory(),
         '/edit_profile': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           return EditProfile(
@@ -251,7 +257,7 @@ class MyApp extends StatelessWidget {
             sellerName: 'Nama Seller',
           );
         },
-        '/order': (context) => const OrderConfirmation(),
+        '/submit_review': (context) => const SubmitReview(),
       },
     );
   }

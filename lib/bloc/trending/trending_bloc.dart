@@ -13,10 +13,8 @@ class TrendingBloc extends Bloc<TrendingEvent, TrendingState> {
       emit(TrendingLoading());
       try {
         final response = await apiService.fetchTrendingProducts(event.sortBy);
-        if (response['status'] == 'success') {
-          final products = (response['data'] as List)
-              .map((json) => Product.fromJson(json))
-              .toList();
+        if (response['success'] == true && response['status'] == 'success') {
+          final List<Product> products = response['data'] as List<Product>;
           emit(TrendingLoaded(products));
         } else {
           emit(TrendingError(response['message'] ?? 'Failed to load products'));

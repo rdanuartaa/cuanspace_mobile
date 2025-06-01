@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/user_model.dart';
 import '../services/api_service.dart';
-import 'about_us.dart';
-import 'settings.dart';
-import 'help_center.dart';
-import 'cart.dart';
-import '/main.dart'; // Import main.dart for color constants
+import '/main.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -19,6 +16,7 @@ class _ProfileState extends State<Profile> {
   int _selectedIndex = 3;
   User? user;
   bool isLoading = true;
+  String errorMessage = '';
   final ApiService apiService = ApiService();
   String? _token;
 
@@ -29,8 +27,37 @@ class _ProfileState extends State<Profile> {
     fetchUserData();
   }
 
+  Future<void> _loadToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _token = prefs.getString('token');
+    });
+  }
+
+  Future<void> fetchUserData() async {
+    try {
+      final result = await apiService.fetchUserProfile();
+      setState(() {
+        if (result['success']) {
+          user = result['data'];
+        } else {
+          errorMessage = result['message'] ?? 'Gagal memuat data pengguna.';
+          if (result['navigateToLogin'] == true) {
+            Navigator.pushReplacementNamed(context, '/login');
+          }
+        }
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Kesalahan saat memuat profil: $e';
+        isLoading = false;
+      });
+    }
+  }
+
   void showFloatingNotification(String message) {
-    OverlayEntry overlayEntry = OverlayEntry(
+    final overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
         top: 50,
         left: 16,
@@ -55,61 +82,26 @@ class _ProfileState extends State<Profile> {
     );
 
     Overlay.of(context).insert(overlayEntry);
-
     Future.delayed(const Duration(seconds: 3), () {
       overlayEntry.remove();
     });
   }
 
-  Future<void> _loadToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _token = prefs.getString('token');
-    });
-  }
-
-  Future<void> fetchUserData() async {
-    try {
-      final result = await apiService.fetchUserProfile();
-      if (result['success']) {
-        setState(() {
-          user = result['data'];
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          isLoading = false;
-        });
-        if (result['navigateToLogin'] == true) {
-          Navigator.pushReplacementNamed(context, '/login');
-        } else {
-          showFloatingNotification(result['message']);
-        }
-      }
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      showFloatingNotification('Error loading profile: $e');
-    }
-  }
-
   Future<void> _logout() async {
-    final navigator = Navigator.of(context);
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           backgroundColor: Theme.of(context).colorScheme.surface,
           title: Text(
-            'Confirm Logout',
+            'Konfirmasi Logout',
             style: Theme.of(context)
                 .textTheme
                 .headlineSmall
                 ?.copyWith(fontSize: 18),
           ),
           content: Text(
-            'Are you sure you want to log out of your account?',
+            'Apakah Anda yakin ingin keluar dari akun Anda?',
             style:
                 Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
           ),
@@ -117,7 +109,7 @@ class _ProfileState extends State<Profile> {
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
-                'Cancel',
+                'Batal',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context)
                           .colorScheme
@@ -135,19 +127,17 @@ class _ProfileState extends State<Profile> {
                 });
                 try {
                   final result = await apiService.logout();
-                  setState(() {
-                    isLoading = false;
-                  });
-                  navigator.pushReplacementNamed('/login');
+                  Navigator.pushReplacementNamed(context, '/login');
                   showFloatingNotification(
-                      result['message'] ?? 'Logout successful.');
+                      result['message'] ?? 'Logout berhasil.');
                 } catch (e) {
+                  Navigator.pushReplacementNamed(context, '/login');
+                  showFloatingNotification(
+                      'Logout berhasil (sesi lokal dihapus).');
+                } finally {
                   setState(() {
                     isLoading = false;
                   });
-                  navigator.pushReplacementNamed('/login');
-                  showFloatingNotification(
-                      'Logout successful (local session cleared).');
                 }
               },
               child: Text(
@@ -175,7 +165,7 @@ class _ProfileState extends State<Profile> {
         Navigator.pushNamed(context, '/home');
         break;
       case 1:
-        Navigator.pushNamed(context, '/explore');
+        Navigator.pushNamed(context, '/trending');
         break;
       case 2:
         Navigator.pushNamed(context, '/notification');
@@ -188,296 +178,312 @@ class _ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
-            decoration: const BoxDecoration(
-              color: Color.fromARGB(255, 255, 255, 255), // warna biru
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Stack(
-              children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(14),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator(color: darkOrange))
+          : errorMessage.isNotEmpty
+              ? Center(
+                  child: Text(errorMessage,
+                      style: Theme.of(context).textTheme.bodyMedium))
+              : SingleChildScrollView(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 50),
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: darkOrange.withOpacity(0.1),
-                        child: user != null &&
-                                user!.userDetail?.profilePhoto != null &&
-                                user!.userDetail!.profilePhoto!.isNotEmpty
-                            ? ClipOval(
-                                child: Image.network(
-                                  '${ApiService.storageUrl}/${user!.userDetail!.profilePhoto}',
-                                  fit: BoxFit.cover,
-                                  width: 100,
-                                  height: 100,
-                                  headers: _token != null
-                                      ? {'Authorization': 'Bearer $_token'}
-                                      : null,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    print(
-                                        'Error loading profile photo: $error');
-                                    return Icon(
-                                      Icons.person,
-                                      size: 60,
-                                      color: darkOrange,
-                                    );
-                                  },
-                                ),
-                              )
-                            : Icon(
-                                Icons.person,
-                                size: 60,
-                                color: darkOrange,
-                              ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        user?.name ?? 'Loading...',
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        user?.email ?? '',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.7),
-                              fontSize: 12,
-                            ),
-                      ),
-                      const SizedBox(height: 20),
-                      Card(
-                        color: Theme.of(context).colorScheme.surface,
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Personal Information',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
-                                    ?.copyWith(
-                                      fontSize: 16,
-                                    ),
-                              ),
-                              const SizedBox(height: 14),
-                              _buildDetailRow(Icons.phone, 'Phone Number',
-                                  user?.userDetail?.phone ?? '-'),
-                              _buildDetailRow(Icons.location_on, 'Address',
-                                  user?.userDetail?.address ?? '-'),
-                              _buildDetailRow(Icons.transgender, 'Gender',
-                                  user?.userDetail?.gender ?? '-'),
-                              _buildDetailRow(
-                                  Icons.calendar_today,
-                                  'Date of Birth',
-                                  user?.userDetail?.dateOfBirth ?? '-'),
-                              _buildDetailRow(Icons.account_balance, 'Religion',
-                                  user?.userDetail?.religion ?? '-'),
-                              _buildDetailRow(Icons.work, 'Status',
-                                  user?.userDetail?.status ?? '-'),
-                              const SizedBox(height: 14),
-                              Center(
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                            context, '/edit_profile',
-                                            arguments: user)
-                                        .then((updatedUser) {
-                                      if (updatedUser != null) {
-                                        setState(() {
-                                          user = updatedUser as User;
-                                        });
-                                      }
-                                    });
-                                  },
-                                  child: Text(
-                                    'Edit Profile',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
+                      // Header
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(20),
+                            bottomRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 60,
+                              backgroundColor: darkOrange.withOpacity(0.1),
+                              child: user?.userDetail?.profilePhoto != null &&
+                                      user!.userDetail!.profilePhoto!.isNotEmpty
+                                  ? ClipOval(
+                                      child: CachedNetworkImage(
+                                        imageUrl:
+                                            '${ApiService.storageUrl}/${user!.userDetail!.profilePhoto}',
+                                        fit: BoxFit.cover,
+                                        width: 120,
+                                        height: 120,
+                                        errorWidget: (context, url, error) =>
+                                            Icon(
+                                          Icons.person,
+                                          size: 80,
+                                          color: darkOrange,
                                         ),
+                                        placeholder: (context, url) =>
+                                            const CircularProgressIndicator(
+                                                color: darkOrange),
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.person,
+                                      size: 80,
+                                      color: darkOrange,
+                                    ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              user?.name ?? 'Pengguna Tidak Diketahui',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700,
+                                    fontFamily: 'Poppins',
+                                  ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              user?.email ?? 'Email tidak tersedia',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.7),
+                                    fontSize: 14,
+                                    fontFamily: 'Poppins',
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Informasi Pribadi
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Informasi Pribadi',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildDetailRow(
+                                  Icons.phone,
+                                  'Nomor Telepon',
+                                  user?.userDetail?.phone ?? 'Belum diatur',
+                                ),
+                                _buildDetailRow(
+                                  Icons.location_on,
+                                  'Alamat',
+                                  user?.userDetail?.address ?? 'Belum diatur',
+                                ),
+                                _buildDetailRow(
+                                  Icons.transgender,
+                                  'Jenis Kelamin',
+                                  user?.userDetail?.gender ?? 'Belum diatur',
+                                ),
+                                _buildDetailRow(
+                                  Icons.calendar_today,
+                                  'Tanggal Lahir',
+                                  user?.userDetail?.dateOfBirth ??
+                                      'Belum diatur',
+                                ),
+                                _buildDetailRow(
+                                  Icons.account_balance,
+                                  'Agama',
+                                  user?.userDetail?.religion ?? 'Belum diatur',
+                                ),
+                                _buildDetailRow(
+                                  Icons.work,
+                                  'Status',
+                                  user?.userDetail?.status ?? 'Belum diatur',
+                                ),
+                                const SizedBox(height: 16),
+                                Center(
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      Navigator.pushNamed(
+                                              context, '/edit_profile',
+                                              arguments: user)
+                                          .then((updatedUser) {
+                                        if (updatedUser != null) {
+                                          setState(() {
+                                            user = updatedUser as User;
+                                          });
+                                        }
+                                      });
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: darkOrange,
+                                      foregroundColor: softWhite,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8)),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 24, vertical: 12),
+                                    ),
+                                    child: const Text(
+                                      'Edit Profil',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
                                   ),
                                 ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Menu Tambahan
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          child: Column(
+                            children: [
+                              ListTile(
+                                leading: Icon(Icons.history,
+                                    color: darkOrange, size: 24),
+                                title: Text(
+                                  'Riwayat Pembelian',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                ),
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                      context, '/order-history');
+                                },
+                              ),
+                              ListTile(
+                                leading: Icon(Icons.info,
+                                    color: darkOrange, size: 24),
+                                title: Text(
+                                  'Tentang Kami',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                ),
+                                onTap: () {
+                                  Navigator.pushNamed(context, '/about_us');
+                                },
+                              ),
+                              ListTile(
+                                leading: Icon(Icons.settings,
+                                    color: darkOrange, size: 24),
+                                title: Text(
+                                  'Pengaturan',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                ),
+                                onTap: () {
+                                  Navigator.pushNamed(context, '/settings');
+                                },
+                              ),
+                              ListTile(
+                                leading: Icon(Icons.help,
+                                    color: darkOrange, size: 24),
+                                title: Text(
+                                  'Pusat Bantuan',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 14,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                ),
+                                onTap: () {
+                                  Navigator.pushNamed(context, '/help_center');
+                                },
+                              ),
+                              ListTile(
+                                leading: Icon(Icons.logout,
+                                    color: darkOrange, size: 24),
+                                title: Text(
+                                  'Logout',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                        color: darkOrange,
+                                        fontSize: 14,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                ),
+                                onTap: _logout,
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      Card(
-                        color: Theme.of(context).colorScheme.surface,
-                        child: Column(
-                          children: [
-                            ListTile(
-                              leading: Icon(
-                                Icons.info,
-                                color: darkOrange,
-                                size: 20,
-                              ),
-                              title: Text(
-                                'About Us',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 13,
-                                    ),
-                              ),
-                              onTap: () {
-                                Navigator.pushNamed(context, '/about_us');
-                              },
-                            ),
-                            ListTile(
-                              leading: Icon(
-                                Icons.settings,
-                                color: darkOrange,
-                                size: 20,
-                              ),
-                              title: Text(
-                                'Settings',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 13,
-                                    ),
-                              ),
-                              onTap: () {
-                                Navigator.pushNamed(context, '/settings');
-                              },
-                            ),
-                            ListTile(
-                              leading: Icon(
-                                Icons.help,
-                                color: darkOrange,
-                                size: 20,
-                              ),
-                              title: Text(
-                                'Help Center',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 13,
-                                    ),
-                              ),
-                              onTap: () {
-                                Navigator.pushNamed(context, '/help_center');
-                              },
-                            ),
-                            ListTile(
-                              leading: Icon(
-                                Icons.logout,
-                                color: darkOrange,
-                                size: 20,
-                              ),
-                              title: Text(
-                                'Logout',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      color: darkOrange,
-                                      fontSize: 13,
-                                    ),
-                              ),
-                              onTap: _logout,
-                            ),
-                          ],
-                        ),
-                      ),
+                      const SizedBox(height: 80),
                     ],
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: IconButton(
-                    icon: Icon(Icons.arrow_back, color: darkOrange, size: 20),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.settings, color: darkOrange, size: 20),
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/settings');
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.shopping_cart_outlined,
-                            color: darkOrange, size: 20),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => Cart()),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home, size: 24),
-            label: 'Beranda', // Diubah dari 'Home'
+            label: 'Beranda',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.explore, size: 24),
-            label: 'Jelajah', // Diubah dari 'Explore'
+            label: 'Jelajah',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications, size: 24),
-            label: 'Notifikasi', // Diubah dari 'Notifications'
+            label: 'Notifikasi',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person, size: 24),
-            label: 'Profil', // Diubah dari 'Profile'
+            label: 'Profil',
           ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: darkOrange,
         unselectedItemColor: Theme.of(context).colorScheme.onSurface,
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        backgroundColor: Theme.of(context).colorScheme.background,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         elevation: 4,
@@ -485,18 +491,14 @@ class _ProfileState extends State<Profile> {
       ),
     );
   }
-
+  
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: darkOrange,
-            size: 20,
-          ),
-          const SizedBox(width: 14),
+          Icon(icon, size: 24, color: darkOrange),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -504,11 +506,12 @@ class _ProfileState extends State<Profile> {
                 Text(
                   label,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        fontSize: 13,
+                        fontFamily: 'Poppins',
                       ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
                   value,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -516,7 +519,8 @@ class _ProfileState extends State<Profile> {
                             .colorScheme
                             .onSurface
                             .withOpacity(0.7),
-                        fontSize: 12,
+                        fontSize: 13,
+                        fontFamily: 'Poppins',
                       ),
                 ),
               ],

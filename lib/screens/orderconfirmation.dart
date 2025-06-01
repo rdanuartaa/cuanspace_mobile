@@ -43,20 +43,20 @@ class _OrderConfirmationState extends State<OrderConfirmation> {
 
   Future<void> downloadFile(String transactionCode) async {
     setState(() {
-      isDownloading = true;
+        isDownloading = true;
     });
 
     try {
-      await apiService.downloadFile(transactionCode);
-      showFloatingNotification('File mulai diunduh.');
+        await apiService.downloadFile(transactionCode);
+        showFloatingNotification('File berhasil diunduh.');
     } catch (e) {
-      showFloatingNotification('Gagal mengunduh file: $e');
+        showFloatingNotification('Gagal mengunduh file: $e');
     } finally {
-      setState(() {
-        isDownloading = false;
-      });
+        setState(() {
+            isDownloading = false;
+        });
     }
-  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -97,10 +97,21 @@ class _OrderConfirmationState extends State<OrderConfirmation> {
               ),
             ),
             const SizedBox(height: 16),
+            Text(
+              'Informasi Download',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'File akan tersedia untuk diunduh sebanyak maksimal 3 kali.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: isDownloading
-                  ? null
-                  : () => downloadFile(args['order_id']),
+              onPressed:
+                  isDownloading ? null : () => downloadFile(args['order_id']),
               style: ElevatedButton.styleFrom(
                 backgroundColor: darkOrange,
                 foregroundColor: softWhite,
