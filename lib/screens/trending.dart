@@ -8,16 +8,17 @@ import 'package:cuan_space/services/api_service.dart';
 import 'package:cuan_space/screens/cart.dart';
 import 'package:cuan_space/main.dart';
 
-class Explore extends StatefulWidget {
-  const Explore({super.key});
+import '../models/product.dart';
+
+class Trending extends StatefulWidget {
+  const Trending({super.key});
 
   @override
-  _ExploreState createState() => _ExploreState();
+  _TrendingState createState() => _TrendingState();
 }
 
-class _ExploreState extends State<Explore> {
+class _TrendingState extends State<Trending> {
   int _selectedIndex = 1;
-  String _sortBy = 'purchases'; // default diubah jadi 'purchases'
 
   void _onItemTapped(int index) {
     setState(() {
@@ -82,175 +83,62 @@ class _ExploreState extends State<Explore> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() => _sortBy = 'purchases');
-                      context
-                          .read<TrendingBloc>()
-                          .add(const FetchTrendingProducts('purchases'));
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _sortBy == 'purchases'
-                          ? darkOrange
-                          : Colors.grey[300],
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
-                    ),
-                    child: const Text('Paling Dibeli',
-                        style: TextStyle(fontSize: 16)),
-                  ),
-                ],
-              ),
-            ),
             Expanded(
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: BlocBuilder<TrendingBloc, TrendingState>(
-                      builder: (context, state) {
-                        if (state is TrendingLoading) {
-                          return const Center(
-                              child:
-                                  CircularProgressIndicator(color: darkOrange));
-                        } else if (state is TrendingLoaded) {
-                          if (state.products.isEmpty) {
-                            return const Center(
-                                child: Text('Tidak ada produk trending'));
-                          }
-                          return GridView.builder(
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 14,
-                              mainAxisSpacing: 14,
-                              childAspectRatio: 0.75,
-                            ),
-                            itemCount: state.products.length,
-                            itemBuilder: (context, index) {
-                              final product = state.products[index];
-                              return AnimatedBuilder(
-                                animation: CurvedAnimation(
-                                  parent: ModalRoute.of(context)?.animation ??
-                                      const AlwaysStoppedAnimation(1.0),
-                                  curve: Curves.easeInOut,
-                                ),
-                                builder: (context, child) {
-                                  return Opacity(
-                                    opacity: CurvedAnimation(
-                                      parent:
-                                          ModalRoute.of(context)?.animation ??
-                                              const AlwaysStoppedAnimation(1.0),
-                                      curve: Curves.easeInOut,
-                                    ).value,
-                                    child: Card(
-                                      color:
-                                          Theme.of(context).colorScheme.surface,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          Expanded(
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  const BorderRadius.vertical(
-                                                      top: Radius.circular(10)),
-                                              child: CachedNetworkImage(
-                                                imageUrl:
-                                                    '${ApiService.storageUrl}/${product.image}',
-                                                fit: BoxFit.cover,
-                                                placeholder: (context, url) =>
-                                                    const Center(
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                          color: darkOrange),
-                                                ),
-                                                errorWidget:
-                                                    (context, url, error) =>
-                                                        const Icon(
-                                                  Icons.error,
-                                                  color: darkOrange,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(10),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  product.name,
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodyMedium
-                                                      ?.copyWith(
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        fontSize: 13,
-                                                      ),
-                                                  maxLines: 2,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                                const SizedBox(height: 3),
-                                                Text(
-                                                  'Dibeli: ${product.purchaseCount}',
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .onSurface
-                                                            .withOpacity(0.7),
-                                                        fontSize: 11,
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          );
-                        } else if (state is TrendingError) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(state.message),
-                                const SizedBox(height: 10),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    context
-                                        .read<TrendingBloc>()
-                                        .add(FetchTrendingProducts(_sortBy));
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor: darkOrange),
-                                  child: const Text('Coba Lagi'),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-                        return const Center(
-                            child: Text('Tekan tombol untuk melihat trending'));
+              child: BlocBuilder<TrendingBloc, TrendingState>(
+                builder: (context, state) {
+                  if (state is TrendingLoading) {
+                    return const Center(
+                        child: CircularProgressIndicator(color: darkOrange));
+                  } else if (state is TrendingLoaded) {
+                    if (state.products.isEmpty) {
+                      return const Center(
+                          child: Text('Tidak ada produk trending'));
+                    }
+
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                        childAspectRatio: 0.7,
+                      ),
+                      itemCount: state.products.length,
+                      itemBuilder: (context, index) {
+                        final product = state.products[index];
+                        return ProductCard(product: product);
                       },
-                    ),
-                  ),
-                ],
+                    );
+                  } else if (state is TrendingError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Error: ${state.message}'),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              context.read<TrendingBloc>().add(
+                                  const FetchTrendingProducts('purchases'));
+                            },
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: darkOrange),
+                            child: const Text('Coba Lagi'),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else if (state is TrendingNavigateToLogin) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      Navigator.pushNamed(context, '/login');
+                    });
+                    return const Center(
+                        child: Text('Mengalihkan ke halaman login...'));
+                  }
+                  return const Center(
+                      child: Text('Gagal memuat produk trending'));
+                },
               ),
             ),
           ],
@@ -263,7 +151,7 @@ class _ExploreState extends State<Explore> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.explore, size: 24),
-              label: 'Trending', // Diubah dari 'Jelajah'
+              label: 'Trending',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.notifications, size: 24),
@@ -282,6 +170,120 @@ class _ExploreState extends State<Explore> {
           type: BottomNavigationBarType.fixed,
           elevation: 4,
           showUnselectedLabels: true,
+        ),
+      ),
+    );
+  }
+}
+
+class ProductCard extends StatelessWidget {
+  final Product product;
+
+  const ProductCard({super.key, required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          '/product_detail',
+          arguments: product,
+        );
+      },
+      child: Card(
+        color: Theme.of(context).colorScheme.surface,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(14)),
+                child: CachedNetworkImage(
+                  imageUrl: product.image,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorWidget: (context, url, error) {
+                    return Container(
+                      color: Theme.of(context).colorScheme.background,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.broken_image,
+                              size: 50,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              'Gambar gagal dimuat',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.7),
+                                    fontSize: 10,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(color: darkOrange),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    product.formattedPrice,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: darkOrange,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Dibeli: ${product.transactionCount ?? 0}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.7),
+                          fontSize: 11,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

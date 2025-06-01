@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/kategori.dart';
@@ -10,8 +14,16 @@ import '../models/chat.dart';
 import '../models/faq.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8000/api';
-  static const String storageUrl = 'http://localhost:8000/storage';
+  // static const String baseUrl = 'http://localhost:8000/api';
+  // static const String storageUrl = 'http://localhost:8000/storage';
+  // static const String baseUrl = 'http://192.168.1.4:8000/api';
+  // static const String storageUrl = 'http://192.168.1.4:8000/storage';
+  // static const String baseUrl = 'http:/10.0.0.2:8000/api';
+  // static const String storageUrl = 'http://10.0.0.2:8000/storage';
+  static const String baseUrl =
+      'https://9752-125-166-116-129.ngrok-free.app/api';
+  static const String storageUrl =
+      'https://9752-125-166-116-129.ngrok-free.app/storage';
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
@@ -21,18 +33,16 @@ class ApiService {
         body: jsonEncode({'email': email, 'password': password}),
       );
       print(
-          'Login response status: ${response.statusCode}, body: ${response.body}'); // Debugging
+          'Login response status: ${response.statusCode}, body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final token = data['data']['token'];
         final user = data['data']['user'];
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(
-            'token', token); // Changed from 'auth_token' to 'token'
-        await prefs.setString('user', jsonEncode(user)); // Save user data
-        print('Login token saved: $token'); // Debugging
-        final savedToken = await _getToken();
-        print('Verified saved token: $savedToken'); // Debugging
+        await prefs.setString('token', token); // Pastikan token disimpan
+        await prefs.setString('user', jsonEncode(user)); // Simpan data user
+        print('Token saved: $token');
         return {
           'success': true,
           'message': 'Login berhasil',
@@ -40,14 +50,14 @@ class ApiService {
         };
       } else {
         final data = jsonDecode(response.body);
-        print('Login error: ${data['message']}'); // Debugging
+        print('Login error: ${data['message']}');
         return {
           'success': false,
           'message': data['message'] ?? 'Login gagal',
         };
       }
     } catch (e) {
-      print('Login exception: $e'); // Debugging
+      print('Login exception: $e');
       return {'success': false, 'message': 'Terjadi kesalahan: $e'};
     }
   }
@@ -220,6 +230,7 @@ class ApiService {
       };
     }
   }
+
   // Fetch Products with Filters
   Future<Map<String, dynamic>> fetchProductsFiltered({
     String? kategori,
@@ -306,7 +317,7 @@ class ApiService {
       };
     }
   }
-  
+
   // Fetch Kategoris
   Future<Map<String, dynamic>> fetchKategoris() async {
     try {
@@ -483,21 +494,43 @@ class ApiService {
 
   Future<User?> getCurrentUser() async {
     try {
-      // Asumsi: API endpoint untuk mendapatkan data user
+      final token = await _getToken();
+      if (token == null) {
+        print('Error getCurrentUser: Token tidak ditemukan');
+        return null;
+      }
+
       final response = await http.get(
         Uri.parse('$baseUrl/user/profile'),
         headers: {
-          'Authorization': 'Bearer ${await _getToken()}',
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
       );
 
+      print(
+          'getCurrentUser response status: ${response.statusCode}, body: ${response.body}');
+
       if (response.statusCode == 200) {
-        return User.fromMap(jsonDecode(response.body)['data']);
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          return User.fromMap(data['data']);
+        } else {
+          print(
+              'Error getCurrentUser: Respons API tidak sukses - ${data['message']}');
+          return null;
+        }
+      } else if (response.statusCode == 401) {
+        print('Error getCurrentUser: Token tidak valid atau sesi kedaluwarsa');
+        return null;
+      } else {
+        print('Error getCurrentUser: Status code ${response.statusCode}');
+        throw Exception(
+            'Gagal mengambil data pengguna: Status ${response.statusCode}');
       }
-      return null;
     } catch (e) {
       print('Error getCurrentUser: $e');
-      return null;
+      throw Exception('Terjadi kesalahan saat mengambil data pengguna: $e');
     }
   }
 
@@ -558,9 +591,8 @@ class ApiService {
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    final token =
-        prefs.getString('token'); // Changed from 'auth_token' to 'token'
-    print('Retrieved token: $token'); // Debugging
+    final token = prefs.getString('token');
+    print('Retrieved token: $token');
     return token;
   }
 
@@ -773,6 +805,7 @@ class ApiService {
       final token = prefs.getString('token');
 
       if (token == null) {
+        print('Error fetchReviews: Token tidak ditemukan');
         return {
           'success': false,
           'message': 'Token tidak ditemukan. Silakan login kembali.',
@@ -788,8 +821,8 @@ class ApiService {
         },
       );
 
-      print('Status respons ambil ulasan: ${response.statusCode}');
-      print('Isi respons ambil ulasan: ${response.body}');
+      print(
+          'fetchReviews response status: ${response.statusCode}, body: ${response.body}');
 
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
@@ -798,13 +831,14 @@ class ApiService {
           'data': responseData['data'],
         };
       } else {
+        print('Error fetchReviews: Status code ${response.statusCode}');
         return {
           'success': false,
           'message': 'Gagal memuat ulasan. Status: ${response.statusCode}',
         };
       }
     } catch (e) {
-      print('Kesalahan saat ambil ulasan: $e');
+      print('Error fetchReviews: $e');
       return {
         'success': false,
         'message': 'Terjadi kesalahan: $e',
@@ -1187,8 +1221,7 @@ class ApiService {
   }
   // ... (kode existing lainnya tetap sama)
 
-  Future<Map<String, dynamic>> createTransaction(
-      Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> createTransaction(Map<String, dynamic> data) async {
     try {
       final token = await _getToken();
       if (token == null) {
@@ -1199,36 +1232,56 @@ class ApiService {
         };
       }
 
+      if (data['email'] == null || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(data['email'])) {
+        return {
+          'success': false,
+          'message': 'Email tidak valid.',
+        };
+      }
+
+      final requestData = {
+        'email': data['email'],
+        'agree': true,
+        'quantity': data['quantity'],
+      };
+      print('Mengirim data transaksi: ${jsonEncode(requestData)}');
+
       final response = await http.post(
-        Uri.parse('$baseUrl/transactions'),
+        Uri.parse('$baseUrl/process-checkout/${data['product_id']}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: jsonEncode({
-          'product_id': data['product_id'],
-          'quantity': data['quantity'],
-        }),
-      );
+        body: jsonEncode(requestData),
+      ).timeout(Duration(seconds: 30));
 
       print('Status respons transaksi: ${response.statusCode}');
       print('Isi respons transaksi: ${response.body}');
 
+      final responseData = jsonDecode(response.body);
+
       if (response.statusCode == 201) {
-        final responseData = jsonDecode(response.body);
-        return {
-          'success': true,
-          'message': 'Transaksi berhasil dibuat.',
-          'data': responseData['data'],
-        };
-      } else {
-        final responseData = jsonDecode(response.body);
+        if (responseData['success'] == true) {
+          return {
+            'success': true,
+            'message': responseData['message'] ?? 'Transaksi berhasil dibuat.',
+            'data': responseData['data'],
+          };
+        }
+      } else if (response.statusCode == 400 && responseData['data'] != null && responseData['data']['snap_token'] != null) {
         return {
           'success': false,
-          'message': responseData['message'] ?? 'Gagal membuat transaksi.',
-          'navigateToLogin': response.statusCode == 401,
+          'message': responseData['message'] ?? 'Transaksi tertunda ditemukan.',
+          'data': responseData['data'],
         };
       }
+
+      return {
+        'success': false,
+        'message': responseData['message'] ?? 'Gagal membuat transaksi.',
+        'navigateToLogin': response.statusCode == 401,
+      };
     } catch (e) {
       print('Kesalahan saat membuat transaksi: $e');
       return {
@@ -1245,25 +1298,68 @@ class ApiService {
         throw Exception('Silakan login terlebih dahulu');
       }
 
+      print('Mengunduh file untuk transaction_code: $transactionCode');
       final response = await http.get(
         Uri.parse('$baseUrl/transactions/$transactionCode/download'),
         headers: {
           'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       );
 
       print('Status respons download: ${response.statusCode}');
+      print('Isi respons download: ${response.body}');
 
       if (response.statusCode == 200) {
-        // Placeholder: Tangani file download
-        // Contoh: saveFile(response.bodyBytes, 'downloaded_file');
-      } else {
         final responseData = jsonDecode(response.body);
-        throw Exception(responseData['message'] ?? 'Gagal mengunduh file.');
+        if (responseData['success'] && responseData['file_url'] != null) {
+          print('File URL ditemukan: ${responseData['file_url']}');
+          var storagePermission = await Permission.storage.request();
+          if (storagePermission.isGranted) {
+            final directory = await getExternalStorageDirectory();
+            if (directory == null) {
+              throw Exception(
+                  'Gagal mendapatkan direktori penyimpanan eksternal.');
+            }
+            final filePath =
+                '${directory.path}/downloaded_file_${transactionCode}.pdf';
+            print('Menyimpan file ke: $filePath');
+
+            final fileResponse =
+                await http.get(Uri.parse(responseData['file_url']));
+            print('Status respons file download: ${fileResponse.statusCode}');
+            if (fileResponse.statusCode == 200) {
+              final file = File(filePath);
+              await file.writeAsBytes(fileResponse.bodyBytes);
+              print('File berhasil disimpan di: $filePath');
+            } else {
+              throw Exception(
+                  'Gagal mengunduh file dari URL: Status ${fileResponse.statusCode}');
+            }
+          } else if (storagePermission.isPermanentlyDenied) {
+            throw Exception(
+                'Izin penyimpanan ditolak secara permanen. Silakan aktifkan di pengaturan.');
+          } else {
+            throw Exception('Izin penyimpanan ditolak.');
+          }
+        } else {
+          throw Exception(responseData['message'] ??
+              'Gagal mengunduh file: Respons server tidak valid.');
+        }
+      } else {
+        try {
+          final responseData = jsonDecode(response.body);
+          throw Exception(responseData['message'] ??
+              'Gagal mengunduh file: Status ${response.statusCode}');
+        } catch (e) {
+          throw Exception(
+              'Gagal mengunduh file: Server mengembalikan respons yang tidak valid (Status ${response.statusCode}).');
+        }
       }
     } catch (e) {
       print('Kesalahan saat mengunduh file: $e');
-      throw Exception('Terjadi kesalahan: $e');
+      throw Exception('Terjadi kesalahan saat mengunduh file: $e');
     }
   }
 
@@ -1332,22 +1428,6 @@ class ApiService {
         };
       }
 
-      // Validate sortBy parameter to prevent injection
-      final validSortOptions = [
-        'popularity',
-        'price',
-        'newest',
-        'rating',
-        'views',
-        'purchases'
-      ];
-      if (!validSortOptions.contains(sortBy)) {
-        return {
-          'success': false,
-          'message': 'Parameter sortBy tidak valid.',
-        };
-      }
-
       var response = await http.get(
         Uri.parse('$baseUrl/trending?sort_by=$sortBy'),
         headers: {
@@ -1361,37 +1441,26 @@ class ApiService {
 
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
-        if (responseData['data'] == null) {
+        if (responseData['status'] != 'success') {
           return {
             'success': false,
-            'message': 'Data produk trending tidak ditemukan.',
+            'message':
+                responseData['message'] ?? 'Gagal memuat produk trending.',
           };
         }
 
-        // Di method fetchTrendingProducts dalam ApiService
-        List<Map<String, dynamic>> productsData = [];
-        if (responseData['data'] is List) {
-          productsData = (responseData['data'] as List).map((json) {
-            // Convert LinkedMap to Map<String, dynamic> first
-            final Map<String, dynamic> item = Map<String, dynamic>.from(json);
+        List<Product> products = (responseData['data'] as List).map((json) {
+          print('Parsing produk: $json');
+          return Product.fromJson(json);
+        }).toList();
 
-            // Handle both thumbnail and image with fallback
-            final imagePath = item['thumbnail'] != null &&
-                    item['thumbnail'].toString().isNotEmpty
-                ? '$storageUrl/${item['thumbnail']}'
-                : (item['image'] != null && item['image'].toString().isNotEmpty
-                    ? '$storageUrl/${item['image']}'
-                    : null);
-
-            item['image'] = imagePath ?? '';
-            return item;
-          }).toList();
-        }
-
+        print('Jumlah produk yang berhasil diparsing: ${products.length}');
         return {
           'success': true,
-          'data': productsData, // Ini sudah List<Map<String, dynamic>>
-          'message': 'Produk trending berhasil diambil.',
+          'status': 'success',
+          'data': products,
+          'message':
+              responseData['message'] ?? 'Produk trending berhasil diambil.',
         };
       } else {
         var responseData = jsonDecode(response.body);
@@ -1407,6 +1476,176 @@ class ApiService {
         'success': false,
         'message': 'Terjadi kesalahan: $e',
       };
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchOrderHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null || token.isEmpty) {
+        return {
+          'success': false,
+          'message':
+              'Token tidak ditemukan atau tidak valid. Silakan login kembali.',
+          'navigateToLogin': true,
+        };
+      }
+
+      print('Mengambil riwayat pesanan dari: $baseUrl/order-history');
+      var response = await http.get(
+        Uri.parse('$baseUrl/order-history'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      ).timeout(Duration(seconds: 30));
+
+      print('Status respons ambil riwayat pesanan: ${response.statusCode}');
+      print('Isi respons ambil riwayat pesanan: ${response.body}');
+
+      if (response.statusCode == 200) {
+        try {
+          var responseData = jsonDecode(response.body);
+          if (responseData['success'] != true) {
+            return {
+              'success': false,
+              'message':
+                  responseData['message'] ?? 'Gagal memuat riwayat pesanan.',
+            };
+          }
+
+          List<dynamic> transactions =
+              (responseData['data'] as List).map((json) {
+            var productJson = json['product'] as Map<String, dynamic>;
+            if (productJson['thumbnail'] != null &&
+                !productJson['thumbnail'].startsWith('http')) {
+              productJson['thumbnail'] =
+                  '$storageUrl/${productJson['thumbnail']}';
+            } else if (productJson['thumbnail'] == null) {
+              productJson['thumbnail'] = 'https://via.placeholder.com/300x200';
+            }
+            return {
+              'id': json['id'],
+              'transaction_code': json['transaction_code'],
+              'product_id': json['product_id'],
+              'product': productJson,
+              'amount': json['amount'] is String
+                  ? double.tryParse(json['amount']) ?? 0.0
+                  : (json['amount'] as num).toDouble(),
+              'status': json['status'],
+              'download_count': json['download_count'] ?? 0,
+              'has_reviewed': json['has_reviewed'] ?? false,
+            };
+          }).toList();
+
+          return {
+            'success': true,
+            'data': transactions,
+            'message': 'Riwayat pesanan berhasil diambil.',
+          };
+        } catch (e) {
+          print('Error parsing order history response: $e');
+          return {
+            'success': false,
+            'message':
+                'Gagal memuat riwayat pesanan: Respons server tidak valid.',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'Gagal memuat riwayat pesanan: ${response.statusCode}',
+          'navigateToLogin': response.statusCode == 401,
+        };
+      }
+    } catch (e) {
+      print('Kesalahan saat ambil riwayat pesanan: $e');
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan: $e',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> submitReview(
+      int productId, Map<String, dynamic> data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      if (token == null) {
+        return {
+          'success': false,
+          'message': 'Token tidak ditemukan. Silakan login kembali.',
+          'navigateToLogin': true,
+        };
+      }
+
+      var response = await http.post(
+        Uri.parse('$baseUrl/products/$productId/reviews'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'rating': data['rating'],
+          'comment': data['comment'],
+        }),
+      );
+
+      print('Status respons kirim ulasan: ${response.statusCode}');
+      print('Isi respons kirim ulasan: ${response.body}');
+
+      if (response.statusCode == 201) {
+        var responseData = jsonDecode(response.body);
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'Ulasan berhasil dikirim.',
+          'data': responseData['data'],
+        };
+      } else {
+        var responseData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': responseData['message'] ?? 'Gagal mengirim ulasan.',
+          'navigateToLogin': response.statusCode == 401,
+        };
+      }
+    } catch (e) {
+      print('Kesalahan saat kirim ulasan: $e');
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan: $e',
+      };
+    }
+  }
+
+  Future<void> cancelTransaction(String transactionCode) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('Silakan login terlebih dahulu');
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/transactions/$transactionCode/cancel'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode != 200) {
+        final responseData = jsonDecode(response.body);
+        throw Exception(
+            responseData['message'] ?? 'Gagal membatalkan transaksi.');
+      }
+    } catch (e) {
+      print('Error cancelling transaction: $e');
+      throw Exception('Terjadi kesalahan: $e');
     }
   }
 }

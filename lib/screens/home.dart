@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cuan_space/services/api_service.dart';
 import 'package:cuan_space/models/kategori.dart';
 import 'package:cuan_space/models/product.dart';
@@ -13,7 +14,7 @@ class Home extends StatefulWidget {
   _HomeState createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
+class _HomeState extends State<Home> {
   List<Kategori> kategoris = [];
   List<Product> products = [];
   bool isLoading = true;
@@ -34,41 +35,11 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     });
   }
 
-  void showFloatingNotification(String message) {
-    final overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: 50,
-        left: 16,
-        right: 16,
-        child: Material(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(8),
-          elevation: 4,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Text(
-              message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 12,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
-      ),
-    );
-
-    Overlay.of(context).insert(overlayEntry);
-    Future.delayed(const Duration(seconds: 3), () {
-      overlayEntry.remove();
-    });
-  }
-
   Future<void> fetchData() async {
     setState(() {
       isLoading = true;
     });
+
     try {
       final kategoriResult = await _apiService.fetchKategoris();
       if (kategoriResult['navigateToLogin'] == true) {
@@ -76,13 +47,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
         return;
       }
 
-      final productResult = await _apiService.fetchProductsFiltered(
-        kategori: _selectedCategoryIndex != null
-            ? kategoris[_selectedCategoryIndex!].id.toString()
-            : null,
-        searchQuery: _searchQuery,
-      );
-
+      final productResult = await _apiService.fetchProducts();
       if (productResult['navigateToLogin'] == true) {
         Navigator.pushNamed(context, '/login');
         return;
@@ -90,60 +55,20 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
       setState(() {
         if (kategoriResult['success']) {
-          print('Kategori diterima: ${kategoriResult['data']}');
           kategoris = kategoriResult['data'] as List<Kategori>;
-          if (kategoris.isEmpty) {
-            showFloatingNotification('Tidak ada kategori tersedia.');
-          }
-        } else {
-          showFloatingNotification(
-              kategoriResult['message'] ?? 'Gagal memuat kategori.');
         }
 
         if (productResult['success']) {
-          print('Produk diterima: ${productResult['data']}');
           products = productResult['data'] as List<Product>;
-          if (products.isEmpty) {
-            showFloatingNotification('Tidak ada produk tersedia.');
-          }
-        } else {
-          showFloatingNotification(
-              productResult['message'] ?? 'Gagal memuat produk.');
         }
 
         isLoading = false;
       });
     } catch (e) {
-      print('Error saat fetchData: $e');
       setState(() {
         isLoading = false;
       });
-      showFloatingNotification('Terjadi kesalahan: $e');
     }
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        title: Text('Error', style: Theme.of(context).textTheme.headlineSmall),
-        content: Text(message, style: Theme.of(context).textTheme.bodyMedium),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'OK',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: darkOrange,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _onItemTapped(int index) {
@@ -155,7 +80,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       case 0:
         break;
       case 1:
-        Navigator.pushNamed(context, '/explore');
+        Navigator.pushNamed(context, '/trending');
         break;
       case 2:
         Navigator.pushNamed(context, '/notification');
@@ -203,7 +128,8 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
           ),
           Expanded(
             child: isLoading
-                ? Center(child: CircularProgressIndicator(color: darkOrange))
+                ? const Center(
+                    child: CircularProgressIndicator(color: darkOrange))
                 : CustomScrollView(
                     slivers: [
                       SliverToBoxAdapter(
@@ -237,14 +163,14 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                               ),
                               const SizedBox(width: 8),
                               IconButton(
-                                icon: Icon(Icons.notifications,
+                                icon: const Icon(Icons.notifications,
                                     color: darkOrange, size: 20),
                                 onPressed: () {
                                   Navigator.pushNamed(context, '/notification');
                                 },
                               ),
                               IconButton(
-                                icon: Icon(Icons.shopping_cart_outlined,
+                                icon: const Icon(Icons.shopping_cart_outlined,
                                     color: darkOrange, size: 20),
                                 onPressed: () {
                                   Navigator.push(
@@ -457,7 +383,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.explore, size: 24),
-            label: 'Trending', // Diubah dari 'Jelajah'
+            label: 'Trending',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications, size: 24),
@@ -487,173 +413,116 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   }
 }
 
-class ProductCard extends StatefulWidget {
+class ProductCard extends StatelessWidget {
   final Product product;
 
   const ProductCard({super.key, required this.product});
 
   @override
-  _ProductCardState createState() => _ProductCardState();
-}
-
-class _ProductCardState extends State<ProductCard>
-    with SingleTickerProviderStateMixin {
-  bool _isHovered = false;
-  double _opacity = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        _opacity = 1.0;
-      });
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    print('Memuat gambar produk: ${widget.product.image}'); // Debugging
     return GestureDetector(
-      onTapDown: (_) {
-        setState(() {
-          _isHovered = true;
-        });
-      },
-      onTapUp: (_) {
-        setState(() {
-          _isHovered = false;
-        });
+      onTap: () {
         Navigator.pushNamed(
           context,
           '/product_detail',
-          arguments: widget.product,
+          arguments: product,
         );
       },
-      onTapCancel: () {
-        setState(() {
-          _isHovered = false;
-        });
-      },
-      child: AnimatedOpacity(
-        opacity: _opacity,
-        duration: const Duration(milliseconds: 500),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          transform: Matrix4.identity()..scale(_isHovered ? 1.02 : 1.0),
-          child: Card(
-            color: Theme.of(context).colorScheme.surface,
-            elevation: _isHovered ? 6 : 2,
-            shadowColor:
-                Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(14)),
-                    child: Image.network(
-                      widget.product.image,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      errorBuilder: (context, error, stackTrace) {
-                        print(
-                            'Gagal memuat gambar: ${widget.product.image}, error: $error');
-                        return Container(
-                          color: Theme.of(context).colorScheme.background,
-                          child: Center(
-                            child: Icon(
-                              Icons.broken_image,
-                              size: 50,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                          ),
-                        );
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    (loadingProgress.expectedTotalBytes ?? 1)
-                                : null,
-                            color: darkOrange,
-                          ),
-                        );
-                      },
-                    ),
+      child: Card(
+        color: Theme.of(context).colorScheme.surface,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(14)),
+                child: CachedNetworkImage(
+                  imageUrl: product.image,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  errorWidget: (context, url, error) {
+                    return Container(
+                      color: Theme.of(context).colorScheme.background,
+                      child: Center(
+                        child: Icon(
+                          Icons.broken_image,
+                          size: 50,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    );
+                  },
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(color: darkOrange),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.product.name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
+                      Expanded(
+                        child: Text(
+                          product.name,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 13,
                                   ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 3),
-                      // Bintang rating
-                      Row(
-                        children: List.generate(
-                          5,
-                          (index) => Icon(
-                            index < widget.product.averageRating.floor()
-                                ? Icons.star
-                                : widget.product.averageRating - index >= 0.5
-                                    ? Icons.star_half
-                                    : Icons.star_border,
-                            color: Colors.orange,
-                            size: 14,
-                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        '${widget.product.reviewCount} ulasan',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withOpacity(0.6),
-                              fontSize: 10,
-                            ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Rp ${widget.product.price.toStringAsFixed(0)}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: darkOrange,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
-                            ),
-                      ),
-                      const SizedBox(height: 3),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 3),
+                  // Bintang rating
+                  Row(
+                    children: List.generate(
+                      5,
+                      (index) => Icon(
+                        index < product.averageRating.floor()
+                            ? Icons.star
+                            : product.averageRating - index >= 0.5
+                                ? Icons.star_half
+                                : Icons.star_border,
+                        color: Colors.orange,
+                        size: 14,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${product.reviewCount} ulasan',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.6),
+                          fontSize: 10,
+                        ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Rp ${product.price.toStringAsFixed(0)}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: darkOrange,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

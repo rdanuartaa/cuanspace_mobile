@@ -12,11 +12,10 @@ class Product {
   final String image;
   final String digitalFile;
   final String status;
-  final int? purchaseCount;
-  final int? viewCount;
+  final int? transactionCount;
   final Kategori? kategori;
-  final double averageRating; // Rata-rata rating
-  final int reviewCount;
+  final double averageRating; // Tambahkan properti untuk rata-rata rating
+  final int reviewCount;     // Tambahkan properti untuk jumlah ulasan
 
   Product({
     required this.id,
@@ -28,11 +27,10 @@ class Product {
     required this.image,
     required this.digitalFile,
     required this.status,
-    this.purchaseCount,
-    this.viewCount,
+    this.transactionCount,
     this.kategori,
-    this.averageRating = 0.0,
-    this.reviewCount = 0,
+    this.averageRating = 0.0, // Default ke 0.0 jika tidak ada rating
+    this.reviewCount = 0,     // Default ke 0 jika tidak ada ulasan
   });
 
   String get formattedPrice {
@@ -40,16 +38,7 @@ class Product {
   }
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    String thumbnail = json['thumbnail']?.toString() ?? '';
-    String imageUrl;
-
-    if (thumbnail.startsWith('http')) {
-      imageUrl = thumbnail;
-    } else if (thumbnail.isNotEmpty) {
-      imageUrl = '${ApiService.storageUrl}/$thumbnail';
-    } else {
-      imageUrl = 'https://via.placeholder.com/300x200';
-    }
+    String imageUrl = json['thumbnail']?.toString() ?? 'https://via.placeholder.com/300x200';
 
     return Product(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
@@ -65,13 +54,18 @@ class Product {
       image: imageUrl,
       digitalFile: json['digital_file']?.toString() ?? '',
       status: json['status']?.toString() ?? 'unknown',
-      purchaseCount: json['purchase_count'] is int ? json['purchase_count'] : null,
-      viewCount: json['view_count'] is int ? json['view_count'] : null,
+      transactionCount: json['transaction_count'] is int
+          ? json['transaction_count']
+          : int.tryParse(json['transaction_count'].toString()) ?? 0,
       kategori: json['kategori'] != null && json['kategori'] is Map
           ? Kategori.fromJson(json['kategori'] as Map<String, dynamic>)
           : null,
-      averageRating: double.tryParse(json['average_rating'].toString()) ?? 0.0,
-      reviewCount: json['review_count'] ?? 0,
+      averageRating: (json['average_rating'] is num
+          ? (json['average_rating'] as num).toDouble()
+          : double.tryParse(json['average_rating'].toString()) ?? 0.0),
+      reviewCount: json['review_count'] is int
+          ? json['review_count']
+          : int.tryParse(json['review_count'].toString()) ?? 0,
     );
   }
 
@@ -86,8 +80,7 @@ class Product {
       'thumbnail': image,
       'digital_file': digitalFile,
       'status': status,
-      'purchase_count': purchaseCount,
-      'view_count': viewCount,
+      'transaction_count': transactionCount,
       'kategori': kategori?.toJson(),
       'average_rating': averageRating,
       'review_count': reviewCount,

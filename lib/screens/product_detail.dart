@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cuan_space/models/product.dart';
 import 'package:cuan_space/services/api_service.dart';
 import 'package:cuan_space/screens/cart.dart';
@@ -16,19 +17,22 @@ class ProductDetail extends StatefulWidget {
 }
 
 class _ProductDetailState extends State<ProductDetail> {
-  int quantity = 1;
   final ApiService apiService = ApiService();
   List<dynamic> reviews = [];
   bool hasPurchased = false;
   bool isLoadingReviews = true;
   String errorMessage = '';
   bool isOwnProduct = false;
+  int downloadCount = 0;
+  int maxDownload = 3;
+  bool canDownload = false;
 
   @override
   void initState() {
     super.initState();
     fetchReviews();
     checkIfOwnProduct();
+    checkPurchaseStatus();
   }
 
   Future<void> checkIfOwnProduct() async {
@@ -47,13 +51,47 @@ class _ProductDetailState extends State<ProductDetail> {
     }
   }
 
+  Future<void> checkPurchaseStatus() async {
+    try {
+      final user = await apiService.getCurrentUser();
+      if (user == null || user.id == null) return;
+
+      final transactionsResponse = await apiService.fetchOrderHistory();
+      if (transactionsResponse['success']) {
+        final transactions = transactionsResponse['data'] as List<dynamic>;
+        final matchingTransaction = transactions.firstWhere(
+          (transaction) =>
+              transaction['product_id'] == widget.product.id &&
+              transaction['status'] == 'paid',
+          orElse: () => null,
+        );
+
+        setState(() {
+          if (matchingTransaction != null) {
+            hasPurchased = true;
+            downloadCount = matchingTransaction['download_count'] ?? 0;
+            canDownload = downloadCount < maxDownload;
+          } else {
+            hasPurchased = false;
+            downloadCount = 0;
+            canDownload = false;
+          }
+        });
+      }
+    } catch (e) {
+      print('Error checking purchase status: $e');
+    }
+  }
+
   Future<void> fetchReviews() async {
     final result = await apiService.fetchReviews(widget.product.id);
     setState(() {
       isLoadingReviews = false;
       if (result['success']) {
-        reviews = result['data']['reviews'];
-        hasPurchased = result['data']['has_purchased'] ?? false;
+        reviews =
+            result['data']['reviews'] ?? []; // Akses 'reviews' di dalam 'data'
+        hasPurchased = result['data']['has_purchased'] ??
+            false; // Ambil status has_purchased
       } else {
         errorMessage = result['message'];
         if (result['navigateToLogin'] == true) {
@@ -61,6 +99,15 @@ class _ProductDetailState extends State<ProductDetail> {
         }
       }
     });
+  }
+
+  double calculateAverageRating() {
+    if (reviews.isEmpty) return 0.0;
+    double totalRating = 0.0;
+    for (var review in reviews) {
+      totalRating += (review['rating'] as num).toDouble();
+    }
+    return totalRating / reviews.length;
   }
 
   void showFloatingNotification(String message) {
@@ -104,11 +151,11 @@ class _ProductDetailState extends State<ProductDetail> {
                 Container(
                   width: double.infinity,
                   height: 200,
-                  child: Image.network(
-                    '${ApiService.storageUrl}/${widget.product.image}',
+                  child: CachedNetworkImage(
+                    imageUrl: widget.product.image,
                     fit: BoxFit.cover,
                     width: double.infinity,
-                    errorBuilder: (context, error, stackTrace) {
+                    errorWidget: (context, url, error) {
                       return Container(
                         color: Theme.of(context).colorScheme.surface,
                         child: Center(
@@ -120,6 +167,9 @@ class _ProductDetailState extends State<ProductDetail> {
                         ),
                       );
                     },
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(color: darkOrange),
+                    ),
                   ),
                 ),
                 Padding(
@@ -166,7 +216,7 @@ class _ProductDetailState extends State<ProductDetail> {
                               color: Colors.yellow, size: 20),
                           const SizedBox(width: 4),
                           Text(
-                            '4.9 373 rating • ${reviews.length} ulasan',
+                            '${calculateAverageRating().toStringAsFixed(1)} (${reviews.length} ulasan)',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
@@ -251,8 +301,6 @@ class _ProductDetailState extends State<ProductDetail> {
                                       final result = await apiService
                                           .startChat(widget.product.sellerId);
                                       if (result['success']) {
-                                        print(
-                                            'Chat started, chat_id: ${result['data']['chat_id']}'); // Debugging
                                         Navigator.pushNamed(context, '/chat',
                                             arguments: {
                                               'chat_id': result['data']
@@ -264,8 +312,6 @@ class _ProductDetailState extends State<ProductDetail> {
                                                   'Penjual Tidak Diketahui',
                                             });
                                       } else {
-                                        print(
-                                            'Start chat failed: ${result['message']}'); // Debugging
                                         showFloatingNotification(
                                             result['message']);
                                         if (result['navigateToLogin'] == true) {
@@ -274,8 +320,6 @@ class _ProductDetailState extends State<ProductDetail> {
                                         }
                                       }
                                     } catch (e) {
-                                      print(
-                                          'Start chat exception: $e'); // Debugging
                                       showFloatingNotification(
                                           'Terjadi kesalahan: $e');
                                     }
@@ -310,13 +354,13 @@ class _ProductDetailState extends State<ProductDetail> {
                       ),
                       const SizedBox(height: 8),
                       isLoadingReviews
-                          ? Center(
+                          ? const Center(
                               child:
                                   CircularProgressIndicator(color: darkOrange))
                           : errorMessage.isNotEmpty
                               ? Center(child: Text(errorMessage))
                               : reviews.isEmpty
-                                  ? Center(
+                                  ? const Center(
                                       child: Text(
                                           'Belum ada ulasan untuk produk ini.'))
                                   : Column(
@@ -346,8 +390,10 @@ class _ProductDetailState extends State<ProductDetail> {
                                                     const Spacer(),
                                                     Row(
                                                       children: List.generate(
-                                                        review['rating'],
-                                                        (index) => Icon(
+                                                        (review['rating']
+                                                                as num)
+                                                            .toInt(),
+                                                        (index) => const Icon(
                                                           Icons.star,
                                                           color: Colors.yellow,
                                                           size: 16,
@@ -467,7 +513,7 @@ class _ProductDetailState extends State<ProductDetail> {
                           MaterialPageRoute(
                             builder: (context) => Cart(
                               product: widget.product,
-                              quantity: quantity,
+                              quantity: 1, // Quantity tetap 1
                             ),
                           ),
                         );
@@ -500,23 +546,67 @@ class _ProductDetailState extends State<ProductDetail> {
                         showFloatingNotification(
                             'Anda tidak dapat membeli produk Anda sendiri.');
                       }
-                    : () {
-                        // Arahkan ke halaman checkout
-                        Navigator.pushNamed(context, '/checkout', arguments: {
-                          'product_id': widget.product.id,
-                          'product_name': widget.product.name,
-                          'price': widget.product.price,
-                          'quantity': quantity,
-                        });
-                      },
+                    : hasPurchased && !canDownload
+                        ? () {
+                            showFloatingNotification(
+                                'Anda telah mencapai batas maksimum download (3 kali). Silakan beli lagi.');
+                          }
+                        : () async {
+                            if (hasPurchased && canDownload) {
+                              try {
+                                // Panggil API untuk mendapatkan informasi transaksi
+                                final transactionsResponse =
+                                    await apiService.fetchOrderHistory();
+                                if (transactionsResponse['success']) {
+                                  final transactions =
+                                      transactionsResponse['data']
+                                          as List<dynamic>;
+                                  final matchingTransaction =
+                                      transactions.firstWhere(
+                                    (transaction) =>
+                                        transaction['product_id'] ==
+                                            widget.product.id &&
+                                        transaction['status'] == 'paid',
+                                    orElse: () => null,
+                                  );
+
+                                  if (matchingTransaction != null) {
+                                    await apiService.downloadFile(
+                                        matchingTransaction[
+                                            'transaction_code']);
+                                    showFloatingNotification(
+                                        'File berhasil diunduh.');
+                                    checkPurchaseStatus(); // Perbarui status download
+                                  } else {
+                                    showFloatingNotification(
+                                        'Transaksi tidak ditemukan.');
+                                  }
+                                }
+                              } catch (e) {
+                                showFloatingNotification(
+                                    'Gagal mengunduh file: $e');
+                              }
+                            } else {
+                              Navigator.pushNamed(context, '/checkout',
+                                  arguments: {
+                                    'product_id': widget.product.id,
+                                    'product_name': widget.product.name,
+                                    'price': widget.product.price,
+                                    'quantity': 1, // Quantity tetap 1
+                                  });
+                            }
+                          },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isOwnProduct
+                  backgroundColor: isOwnProduct ||
+                          (hasPurchased && !canDownload)
                       ? Theme.of(context).colorScheme.onSurface.withOpacity(0.5)
                       : Theme.of(context).colorScheme.primary,
                 ),
-                child: const Text(
-                  'Beli',
-                  style: TextStyle(
+                child: Text(
+                  hasPurchased && canDownload
+                      ? 'Download (${maxDownload - downloadCount}/3)'
+                      : 'Beli',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontFamily: 'Poppins',
                     fontSize: 16,
