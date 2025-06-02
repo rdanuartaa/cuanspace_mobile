@@ -1,10 +1,11 @@
+import 'package:cuan_space/screens/order_history.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Untuk SystemNavigator.pop()
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cuan_space/services/api_service.dart';
 import 'package:cuan_space/models/kategori.dart';
 import 'package:cuan_space/models/product.dart';
 import 'package:cuan_space/screens/notification.dart';
-import 'package:cuan_space/screens/cart.dart';
 import 'package:cuan_space/main.dart';
 
 class Home extends StatefulWidget {
@@ -43,13 +44,13 @@ class _HomeState extends State<Home> {
     try {
       final kategoriResult = await _apiService.fetchKategoris();
       if (kategoriResult['navigateToLogin'] == true) {
-        Navigator.pushNamed(context, '/login');
+        Navigator.pushReplacementNamed(context, '/login');
         return;
       }
 
       final productResult = await _apiService.fetchProducts();
       if (productResult['navigateToLogin'] == true) {
-        Navigator.pushNamed(context, '/login');
+        Navigator.pushReplacementNamed(context, '/login');
         return;
       }
 
@@ -111,297 +112,325 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
-            decoration: const BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
+    return WillPopScope(
+      onWillPop: () async {
+        // Tampilkan dialog konfirmasi sebelum keluar
+        bool? shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Keluar Aplikasi'),
+            content:
+                const Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Tidak'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Ya'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldExit == true) {
+          SystemNavigator.pop(); // Keluar dari aplikasi
+        }
+        return false; // Mencegah navigasi default
+      },
+      child: Scaffold(
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
+              decoration: const BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: darkOrange))
-                : CustomScrollView(
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          child: Row(
-                            children: [
-                              Text(
-                                'Cuan Space',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
-                                    ?.copyWith(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: TextField(
-                                  controller: _searchController,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Search digital products...',
-                                  ),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(fontSize: 12),
+            Expanded(
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: darkOrange))
+                  : CustomScrollView(
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            child: Row(
+                              children: [
+                                Image.asset(
+                                  'assets/icon/app_icon.png',
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.contain,
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: const Icon(Icons.notifications,
-                                    color: darkOrange, size: 20),
-                                onPressed: () {
-                                  Navigator.pushNamed(context, '/notification');
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.shopping_cart_outlined,
-                                    color: darkOrange, size: 20),
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => const Cart()),
-                                  );
-                                },
-                              ),
-                            ],
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    decoration: const InputDecoration(
+                                        hintText: 'Cari produk digital anda',
+                                        fillColor: Colors.grey),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(fontSize: 12),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(Icons.notifications,
+                                      color: darkOrange, size: 20),
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                        context, '/notification');
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.history,
+                                      color: darkOrange, size: 20),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              const OrderHistory()),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Digital Product Categories',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
-                                    ?.copyWith(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                              const SizedBox(height: 10),
-                              kategoris.isEmpty
-                                  ? Text(
-                                      'No categories available.',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.7),
-                                            fontSize: 12,
-                                          ),
-                                    )
-                                  : SizedBox(
-                                      height: 40,
-                                      child: ListView.builder(
-                                        scrollDirection: Axis.horizontal,
-                                        itemCount: kategoris.length,
-                                        itemBuilder: (context, index) {
-                                          final isSelected =
-                                              _selectedCategoryIndex == index;
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: 10),
-                                            child: GestureDetector(
-                                              onTap: () {
-                                                setState(() {
-                                                  if (isSelected) {
-                                                    _selectedCategoryIndex =
-                                                        null;
-                                                  } else {
-                                                    _selectedCategoryIndex =
-                                                        index;
-                                                  }
-                                                });
-                                              },
-                                              child: AnimatedContainer(
-                                                duration: const Duration(
-                                                    milliseconds: 200),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 14,
-                                                        vertical: 8),
-                                                decoration: BoxDecoration(
-                                                  color: isSelected
-                                                      ? darkOrange
-                                                          .withOpacity(0.1)
-                                                      : Theme.of(context)
-                                                          .colorScheme
-                                                          .surface,
-                                                  borderRadius:
-                                                      BorderRadius.circular(18),
-                                                  border: Border.all(
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Digital Product Categories',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                                const SizedBox(height: 10),
+                                kategoris.isEmpty
+                                    ? Text(
+                                        'No categories available.',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface
+                                                  .withOpacity(0.7),
+                                              fontSize: 12,
+                                            ),
+                                      )
+                                    : SizedBox(
+                                        height: 40,
+                                        child: ListView.builder(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: kategoris.length,
+                                          itemBuilder: (context, index) {
+                                            final isSelected =
+                                                _selectedCategoryIndex == index;
+                                            return Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: 10),
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    if (isSelected) {
+                                                      _selectedCategoryIndex =
+                                                          null;
+                                                    } else {
+                                                      _selectedCategoryIndex =
+                                                          index;
+                                                    }
+                                                  });
+                                                },
+                                                child: AnimatedContainer(
+                                                  duration: const Duration(
+                                                      milliseconds: 200),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 14,
+                                                      vertical: 8),
+                                                  decoration: BoxDecoration(
                                                     color: isSelected
                                                         ? darkOrange
+                                                            .withOpacity(0.1)
                                                         : Theme.of(context)
                                                             .colorScheme
-                                                            .onSurface
-                                                            .withOpacity(0.3),
-                                                    width: isSelected ? 2 : 1,
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    Text(
-                                                      kategoris[index]
-                                                          .namaKategori,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodyMedium
-                                                          ?.copyWith(
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            fontSize: 12,
-                                                            color: isSelected
-                                                                ? darkOrange
-                                                                : Theme.of(
-                                                                        context)
-                                                                    .colorScheme
-                                                                    .onSurface,
-                                                          ),
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    Icon(
-                                                      Icons.arrow_drop_down,
-                                                      size: 18,
+                                                            .surface,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            18),
+                                                    border: Border.all(
                                                       color: isSelected
                                                           ? darkOrange
                                                           : Theme.of(context)
                                                               .colorScheme
-                                                              .onSurface,
+                                                              .onSurface
+                                                              .withOpacity(0.3),
+                                                      width: isSelected ? 2 : 1,
                                                     ),
-                                                  ],
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      Text(
+                                                        kategoris[index]
+                                                            .namaKategori,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .bodyMedium
+                                                            ?.copyWith(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 12,
+                                                              color: isSelected
+                                                                  ? darkOrange
+                                                                  : Theme.of(
+                                                                          context)
+                                                                      .colorScheme
+                                                                      .onSurface,
+                                                            ),
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Icon(
+                                                        Icons.arrow_drop_down,
+                                                        size: 18,
+                                                        color: isSelected
+                                                            ? darkOrange
+                                                            : Theme.of(context)
+                                                                .colorScheme
+                                                                .onSurface,
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          );
-                                        },
+                                            );
+                                          },
+                                        ),
                                       ),
-                                    ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Popular Digital Products',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
-                                    ?.copyWith(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                              const SizedBox(height: 10),
-                            ],
-                          ),
-                        ),
-                      ),
-                      filteredProducts.isEmpty
-                          ? SliverToBoxAdapter(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 10),
-                                child: Text(
-                                  'No products available.',
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Popular Digital Products',
                                   style: Theme.of(context)
                                       .textTheme
-                                      .bodyMedium
+                                      .headlineSmall
                                       ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withOpacity(0.7),
-                                        fontSize: 12,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                 ),
-                              ),
-                            )
-                          : SliverPadding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 0),
-                              sliver: SliverGrid(
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  crossAxisSpacing: 14,
-                                  mainAxisSpacing: 14,
-                                  childAspectRatio: 0.7,
-                                ),
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) {
-                                    final product = filteredProducts[index];
-                                    return ProductCard(product: product);
-                                  },
-                                  childCount: filteredProducts.length,
-                                ),
-                              ),
+                                const SizedBox(height: 10),
+                              ],
                             ),
-                      const SliverToBoxAdapter(child: SizedBox(height: 14)),
-                    ],
-                  ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home, size: 24),
-            label: 'Beranda',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.explore, size: 24),
-            label: 'Trending',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications, size: 24),
-            label: 'Notifikasi',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person, size: 24),
-            label: 'Profil',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: darkOrange,
-        unselectedItemColor: Theme.of(context).colorScheme.onSurface,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        elevation: 4,
-        showUnselectedLabels: true,
+                          ),
+                        ),
+                        filteredProducts.isEmpty
+                            ? SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 10),
+                                  child: Text(
+                                    'No products available.',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.7),
+                                          fontSize: 12,
+                                        ),
+                                  ),
+                                ),
+                              )
+                            : SliverPadding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 0),
+                                sliver: SliverGrid(
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 14,
+                                    mainAxisSpacing: 14,
+                                    childAspectRatio: 0.7,
+                                  ),
+                                  delegate: SliverChildBuilderDelegate(
+                                    (context, index) {
+                                      final product = filteredProducts[index];
+                                      return ProductCard(product: product);
+                                    },
+                                    childCount: filteredProducts.length,
+                                  ),
+                                ),
+                              ),
+                        const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home, size: 24),
+              label: 'Beranda',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.explore, size: 24),
+              label: 'Trending',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.notifications, size: 24),
+              label: 'Notifikasi',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person, size: 24),
+              label: 'Profil',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: darkOrange,
+          unselectedItemColor: Theme.of(context).colorScheme.onSurface,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
+          elevation: 4,
+          showUnselectedLabels: true,
+        ),
       ),
     );
   }

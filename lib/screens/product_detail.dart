@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cuan_space/models/product.dart';
 import 'package:cuan_space/services/api_service.dart';
-import 'package:cuan_space/screens/cart.dart';
 import 'package:cuan_space/screens/settings.dart';
 import 'package:cuan_space/main.dart';
 import 'package:intl/intl.dart';
@@ -79,7 +78,7 @@ class _ProductDetailState extends State<ProductDetail> {
         });
       }
     } catch (e) {
-      print('Error checking purchase status: $e');
+      print('Error memeriksa status pembelian: $e');
     }
   }
 
@@ -88,10 +87,8 @@ class _ProductDetailState extends State<ProductDetail> {
     setState(() {
       isLoadingReviews = false;
       if (result['success']) {
-        reviews =
-            result['data']['reviews'] ?? []; // Akses 'reviews' di dalam 'data'
-        hasPurchased = result['data']['has_purchased'] ??
-            false; // Ambil status has_purchased
+        reviews = result['data']['reviews'] ?? [];
+        hasPurchased = result['data']['has_purchased'] ?? false;
       } else {
         errorMessage = result['message'];
         if (result['navigateToLogin'] == true) {
@@ -480,16 +477,6 @@ class _ProductDetailState extends State<ProductDetail> {
                     );
                   },
                 ),
-                IconButton(
-                  icon: Icon(Icons.shopping_cart_outlined,
-                      color: Theme.of(context).iconTheme.color),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const Cart()),
-                    );
-                  },
-                ),
               ],
             ),
           ),
@@ -498,124 +485,79 @@ class _ProductDetailState extends State<ProductDetail> {
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(8),
         color: Theme.of(context).colorScheme.surface,
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: isOwnProduct
-                    ? () {
-                        showFloatingNotification(
-                            'Anda tidak dapat membeli produk Anda sendiri.');
-                      }
-                    : () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => Cart(
-                              product: widget.product,
-                              quantity: 1, // Quantity tetap 1
-                            ),
-                          ),
-                        );
-                      },
-                style: OutlinedButton.styleFrom(
-                  side:
-                      BorderSide(color: Theme.of(context).colorScheme.primary),
-                ),
-                child: Text(
-                  'Keranjang',
-                  style: TextStyle(
-                    color: isOwnProduct
-                        ? Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.5)
-                        : Theme.of(context).colorScheme.primary,
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: isOwnProduct
-                    ? () {
-                        showFloatingNotification(
-                            'Anda tidak dapat membeli produk Anda sendiri.');
-                      }
-                    : hasPurchased && !canDownload
-                        ? () {
-                            showFloatingNotification(
-                                'Anda telah mencapai batas maksimum download (3 kali). Silakan beli lagi.');
-                          }
-                        : () async {
-                            if (hasPurchased && canDownload) {
-                              try {
-                                // Panggil API untuk mendapatkan informasi transaksi
-                                final transactionsResponse =
-                                    await apiService.fetchOrderHistory();
-                                if (transactionsResponse['success']) {
-                                  final transactions =
-                                      transactionsResponse['data']
-                                          as List<dynamic>;
-                                  final matchingTransaction =
-                                      transactions.firstWhere(
-                                    (transaction) =>
-                                        transaction['product_id'] ==
-                                            widget.product.id &&
-                                        transaction['status'] == 'paid',
-                                    orElse: () => null,
-                                  );
+        child: ElevatedButton(
+          onPressed: isOwnProduct
+              ? () {
+                  showFloatingNotification(
+                      'Anda tidak dapat membeli produk Anda sendiri.');
+                }
+              : hasPurchased && !canDownload
+                  ? () {
+                      showFloatingNotification(
+                          'Anda telah mencapai batas maksimum download (3 kali). Silakan beli lagi.');
+                    }
+                  : () async {
+                      if (hasPurchased && canDownload) {
+                        try {
+                          final transactionsResponse =
+                              await apiService.fetchOrderHistory();
+                          if (transactionsResponse['success']) {
+                            final transactions =
+                                transactionsResponse['data'] as List<dynamic>;
+                            final matchingTransaction = transactions.firstWhere(
+                              (transaction) =>
+                                  transaction['product_id'] ==
+                                      widget.product.id &&
+                                  transaction['status'] == 'paid',
+                              orElse: () => {},
+                            );
 
-                                  if (matchingTransaction != null) {
-                                    await apiService.downloadFile(
-                                        matchingTransaction[
-                                            'transaction_code']);
-                                    showFloatingNotification(
-                                        'File berhasil diunduh.');
-                                    checkPurchaseStatus(); // Perbarui status download
-                                  } else {
-                                    showFloatingNotification(
-                                        'Transaksi tidak ditemukan.');
-                                  }
-                                }
-                              } catch (e) {
-                                showFloatingNotification(
-                                    'Gagal mengunduh file: $e');
-                              }
-                            } else {
-                              Navigator.pushNamed(context, '/checkout',
+                            if (matchingTransaction.isNotEmpty) {
+                              Navigator.pushNamed(context, '/order-confirmation',
                                   arguments: {
-                                    'product_id': widget.product.id,
+                                    'order_id':
+                                        matchingTransaction['transaction_code'],
                                     'product_name': widget.product.name,
-                                    'price': widget.product.price,
-                                    'quantity': 1, // Quantity tetap 1
+                                    'quantity': 1,
+                                    'total_price': widget.product.price,
                                   });
+                            } else {
+                              showFloatingNotification('Transaksi tidak ditemukan.');
                             }
-                          },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isOwnProduct ||
-                          (hasPurchased && !canDownload)
-                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.5)
-                      : Theme.of(context).colorScheme.primary,
-                ),
-                child: Text(
-                  hasPurchased && canDownload
-                      ? 'Download (${maxDownload - downloadCount}/3)'
-                      : 'Beli',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+                          }
+                        } catch (e) {
+                          showFloatingNotification('Gagal memproses: $e');
+                        }
+                      } else {
+                        // Navigate to checkout page
+                        Navigator.pushNamed(context, '/checkout', arguments: {
+                          'product_id': widget.product.id,
+                          'product_name': widget.product.name,
+                          'price': widget.product.price,
+                          'quantity': 1,
+                        });
+                      }
+                    },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isOwnProduct || (hasPurchased && !canDownload)
+                ? Theme.of(context).colorScheme.onSurface.withOpacity(0.5)
+                : Theme.of(context).colorScheme.primary,
+            minimumSize: const Size(double.infinity, 48),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-          ],
+          ),
+          child: Text(
+            hasPurchased && canDownload
+                ? 'Download (${maxDownload - downloadCount}/3)'
+                : 'Beli',
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'Poppins',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     );

@@ -36,16 +36,19 @@ class UserDetail {
   }
 
   factory UserDetail.fromMap(Map<String, dynamic> map) {
+    print('Parsing user_detail map: $map'); // Tambahkan log
     return UserDetail(
-      id: map['id'] as int?,
-      userId: map['user_id'] as int?,
-      profilePhoto: map['profile_photo'] as String?,
-      phone: map['phone'] as String?,
-      address: map['address'] as String?,
-      gender: map['gender'] as String?,
-      dateOfBirth: map['date_of_birth'] as String?,
-      religion: map['religion'] as String?,
-      status: map['status'] as String?,
+      id: map['id'] is int ? map['id'] : int.tryParse(map['id'].toString()),
+      userId: map['user_id'] is int
+          ? map['user_id']
+          : int.tryParse(map['user_id'].toString()),
+      profilePhoto: map['profile_photo']?.toString(),
+      phone: map['phone']?.toString(),
+      address: map['address']?.toString(),
+      gender: map['gender']?.toString(),
+      dateOfBirth: map['date_of_birth']?.toString(),
+      religion: map['religion']?.toString(),
+      status: map['status']?.toString(),
     );
   }
 }

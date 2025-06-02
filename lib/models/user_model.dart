@@ -31,10 +31,13 @@ class User {
   }
 
   factory User.fromMap(Map<String, dynamic> map) {
+    print('Parsing user map: $map'); // Tambahkan log untuk debugging
     return User(
-      id: map['id'] as int?,
-      name: map['name'] as String?,
-      email: map['email'] as String?,
+      id: map['id'] is int
+          ? map['id']
+          : int.tryParse(map['id'].toString()) ?? 0,
+      name: map['name']?.toString() ?? 'Unknown User',
+      email: map['email']?.toString() ?? 'No Email',
       userDetail: map['user_detail'] != null
           ? UserDetail.fromMap(map['user_detail'] as Map<String, dynamic>)
           : null,

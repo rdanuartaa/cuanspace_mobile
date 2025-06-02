@@ -95,7 +95,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     }
   } catch (e) {
-    print('Fetch messages exception in chat.dart: $e'); // Debugging
+    print( '$e'); // Debugging
     if (!silent) {
       setState(() {
         isLoading = false;

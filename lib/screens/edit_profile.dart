@@ -6,7 +6,6 @@ import '../services/api_service.dart';
 import '../models/user_model.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'cart.dart';
 
 class EditProfile extends StatefulWidget {
   final User user;
@@ -456,19 +455,6 @@ class _EditProfileState extends State<EditProfile> {
               icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
               onPressed: () {
                 Navigator.pop(context);
-              },
-            ),
-          ),
-          Positioned(
-            top: 10,
-            right: 10,
-            child: IconButton(
-              icon: Icon(Icons.shopping_cart_outlined, color: Theme.of(context).iconTheme.color),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Cart()),
-                );
               },
             ),
           ),

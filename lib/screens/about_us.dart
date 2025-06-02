@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'cart.dart';
 
 class AboutUsPage extends StatefulWidget {
   @override
@@ -52,7 +51,8 @@ class _AboutUsPageState extends State<AboutUsPage> {
     try {
       // Data statis lokal
       final staticData = {
-        'description': 'Kami adalah platform yang berdedikasi untuk memberikan pengalaman terbaik bagi pengguna.',
+        'description':
+            'Kami adalah platform yang berdedikasi untuk memberikan pengalaman terbaik bagi pengguna.',
         'version': '1.0.0',
         'mission': '- Memberikan pengalaman pengguna yang intuitif.\n'
             '- Menyediakan fitur inovatif.\n'
@@ -78,7 +78,9 @@ class _AboutUsPageState extends State<AboutUsPage> {
       body: Stack(
         children: [
           isLoading
-              ? Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
+              ? Center(
+                  child: CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.primary))
               : errorMessage.isNotEmpty
                   ? Center(
                       child: Text(
@@ -91,10 +93,15 @@ class _AboutUsPageState extends State<AboutUsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(height: 60), // Ruang untuk tombol kembali dan ikon
+                          SizedBox(
+                              height:
+                                  60), // Ruang untuk tombol kembali dan ikon
                           Text(
                             'Tentang Aplikasi Kami',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -103,14 +110,21 @@ class _AboutUsPageState extends State<AboutUsPage> {
                           Text(
                             aboutData?['description'] ??
                                 'Kami adalah platform yang berdedikasi untuk memberikan pengalaman terbaik bagi pengguna.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.secondary,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.secondary,
                                 ),
                           ),
                           SizedBox(height: 24),
                           Text(
                             'Versi Aplikasi',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -118,14 +132,21 @@ class _AboutUsPageState extends State<AboutUsPage> {
                           SizedBox(height: 8),
                           Text(
                             aboutData?['version'] ?? '1.0.0',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.secondary,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.secondary,
                                 ),
                           ),
                           SizedBox(height: 24),
                           Text(
                             'Misi Kami',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -136,8 +157,12 @@ class _AboutUsPageState extends State<AboutUsPage> {
                                 '- Memberikan pengalaman pengguna yang intuitif.\n'
                                     '- Menyediakan fitur inovatif.\n'
                                     '- Menjaga privasi dan keamanan data.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.secondary,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.secondary,
                                 ),
                           ),
                         ],
@@ -148,22 +173,10 @@ class _AboutUsPageState extends State<AboutUsPage> {
             top: 10,
             left: 10,
             child: IconButton(
-              icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
+              icon: Icon(Icons.arrow_back,
+                  color: Theme.of(context).iconTheme.color),
               onPressed: () {
                 Navigator.pop(context);
-              },
-            ),
-          ),
-          Positioned(
-            top: 10,
-            right: 10,
-            child: IconButton(
-              icon: Icon(Icons.shopping_cart_outlined, color: Theme.of(context).iconTheme.color),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Cart()),
-                );
               },
             ),
           ),

@@ -37,11 +37,15 @@ class _ProfileState extends State<Profile> {
   Future<void> fetchUserData() async {
     try {
       final result = await apiService.fetchUserProfile();
+      print('Fetch user profile result: $result'); // Tambahkan log
       setState(() {
         if (result['success']) {
-          user = result['data'];
+          user = result['data'] as User;
+          print('User set: ${user?.toMap()}'); // Log data user
+          errorMessage = '';
         } else {
           errorMessage = result['message'] ?? 'Gagal memuat data pengguna.';
+          print('Error message set: $errorMessage'); // Log error
           if (result['navigateToLogin'] == true) {
             Navigator.pushReplacementNamed(context, '/login');
           }
@@ -53,6 +57,7 @@ class _ProfileState extends State<Profile> {
         errorMessage = 'Kesalahan saat memuat profil: $e';
         isLoading = false;
       });
+      print('Fetch user data error: $e'); // Log exception
     }
   }
 
@@ -379,7 +384,7 @@ class _ProfileState extends State<Profile> {
                                 ),
                                 onTap: () {
                                   Navigator.pushNamed(
-                                      context, '/order-history');
+                                      context, '/order-historied');
                                 },
                               ),
                               ListTile(
@@ -469,7 +474,7 @@ class _ProfileState extends State<Profile> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.explore, size: 24),
-            label: 'Jelajah',
+            label: 'Trending',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications, size: 24),
@@ -483,7 +488,7 @@ class _ProfileState extends State<Profile> {
         currentIndex: _selectedIndex,
         selectedItemColor: darkOrange,
         unselectedItemColor: Theme.of(context).colorScheme.onSurface,
-        backgroundColor: Theme.of(context).colorScheme.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         elevation: 4,
@@ -491,7 +496,7 @@ class _ProfileState extends State<Profile> {
       ),
     );
   }
-  
+
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),

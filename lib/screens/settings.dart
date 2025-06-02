@@ -23,32 +23,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void showFloatingNotification(String message) {
-    final overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: 50,
-        left: 16,
-        right: 16,
-        child: Material(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(8),
-          elevation: 4,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Text(
-              message,
-              style: Theme.of(context).textTheme.bodyMedium ??
-                  const TextStyle(fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3),
       ),
     );
-
-    Overlay.of(context).insert(overlayEntry);
-    Future.delayed(const Duration(seconds: 3), () {
-      overlayEntry.remove();
-    });
   }
 
   Future<void> loadSettings() async {
@@ -58,8 +38,6 @@ class _SettingsPageState extends State<SettingsPage> {
         errorMessage = '';
       });
       final prefs = await SharedPreferences.getInstance();
-      debugPrint('Loaded language: ${prefs.getString('language')}');
-      debugPrint('Loaded notifications: ${prefs.getBool('notifications')}');
       setState(() {
         selectedLanguage = prefs.getString('language') ?? 'Indonesia';
         notificationsEnabled = prefs.getBool('notifications') ?? true;
@@ -124,59 +102,6 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  ListTile(
-                    leading: Icon(Icons.language,
-                        color: Theme.of(context).colorScheme.primary),
-                    title: Text(
-                      'Bahasa',
-                      style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w500) ??
-                          const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    trailing: DropdownButton<String>(
-                      value: selectedLanguage,
-                      dropdownColor: Theme.of(context).colorScheme.surface,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      items: ['Indonesia', 'English'].map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            selectedLanguage = value;
-                          });
-                          saveSettings();
-                        }
-                      },
-                    ),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.notifications,
-                        color: Theme.of(context).colorScheme.primary),
-                    title: Text(
-                      'Notifikasi',
-                      style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w500) ??
-                          const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    trailing: Switch(
-                      value: notificationsEnabled,
-                      activeColor: Theme.of(context).colorScheme.primary,
-                      onChanged: (value) {
-                        setState(() {
-                          notificationsEnabled = value;
-                        });
-                        saveSettings();
-                      },
-                    ),
-                  ),
                   ListTile(
                     leading: Icon(Icons.dark_mode,
                         color: Theme.of(context).colorScheme.primary),
