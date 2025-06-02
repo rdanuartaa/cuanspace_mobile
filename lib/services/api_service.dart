@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -16,14 +17,14 @@ import '../models/faq.dart';
 class ApiService {
   // static const String baseUrl = 'http://localhost:8000/api';
   // static const String storageUrl = 'http://localhost:8000/storage';
-  // static const String baseUrl = 'http://192.168.1.4:8000/api';
-  // static const String storageUrl = 'http://192.168.1.4:8000/storage';
+  // static const String baseUrl = 'http://192.168.0.100:8000/api';
+  // static const String storageUrl = 'http://192.168.0.100:8000/storage';
   // static const String baseUrl = 'http:/10.0.0.2:8000/api';
   // static const String storageUrl = 'http://10.0.0.2:8000/storage';
   static const String baseUrl =
-      'https://9752-125-166-116-129.ngrok-free.app/api';
+      'https://b977-125-166-117-180.ngrok-free.app/api';
   static const String storageUrl =
-      'https://9752-125-166-116-129.ngrok-free.app/storage';
+      'https://b977-125-166-117-180.ngrok-free.app/storage';
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
@@ -40,8 +41,8 @@ class ApiService {
         final token = data['data']['token'];
         final user = data['data']['user'];
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', token); // Pastikan token disimpan
-        await prefs.setString('user', jsonEncode(user)); // Simpan data user
+        await prefs.setString('token', token);
+        await prefs.setString('user', jsonEncode(user));
         print('Token saved: $token');
         return {
           'success': true,
@@ -494,7 +495,7 @@ class ApiService {
 
   Future<User?> getCurrentUser() async {
     try {
-      final token = await _getToken();
+      final token = await getToken();
       if (token == null) {
         print('Error getCurrentUser: Token tidak ditemukan');
         return null;
@@ -541,7 +542,7 @@ class ApiService {
     required double totalPrice,
   }) async {
     try {
-      final token = await _getToken();
+      final token = await getToken();
       if (token == null) {
         return {
           'success': false,
@@ -589,7 +590,7 @@ class ApiService {
     }
   }
 
-  Future<String?> _getToken() async {
+  Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     print('Retrieved token: $token');
@@ -603,6 +604,7 @@ class ApiService {
       final token = prefs.getString('token');
 
       if (token == null) {
+        print('No token found');
         return {
           'success': false,
           'message': 'Token tidak ditemukan. Silakan login kembali.',
@@ -623,15 +625,35 @@ class ApiService {
 
       if (response.statusCode == 200) {
         var responseData = jsonDecode(response.body);
-        print('Data pengguna sebelum parsing: $responseData'); // Debugging
+        print('Data pengguna sebelum parsing: $responseData');
 
-        final user = User.fromMap(responseData as Map<String, dynamic>);
-        return {
-          'success': true,
-          'data': user,
-          'is_seller': responseData['is_seller'] ?? false,
-        };
+        if (responseData['success'] == true) {
+          final userData = responseData['data'];
+          if (userData is Map<String, dynamic>) {
+            final user = User.fromMap(userData);
+            print('Parsed user: ${user.toMap()}');
+            return {
+              'success': true,
+              'data': user,
+              'is_seller': responseData['is_seller'] ?? false,
+            };
+          } else {
+            print('Invalid user data format: $userData');
+            return {
+              'success': false,
+              'message': 'Data pengguna tidak valid.',
+            };
+          }
+        } else {
+          print('API response not successful: ${responseData['message']}');
+          return {
+            'success': false,
+            'message':
+                responseData['message'] ?? 'Gagal memuat data profil pengguna.',
+          };
+        }
       } else {
+        print('Failed to fetch profile, status: ${response.statusCode}');
         return {
           'success': false,
           'message': 'Gagal memuat data profil. Status: ${response.statusCode}',
@@ -776,7 +798,7 @@ class ApiService {
   // Fetch Seller Profile
   Future<Map<String, dynamic>> fetchSellerProfile(int sellerId) async {
     try {
-      final token = await _getToken();
+      final token = await getToken();
       final response = await http.get(
         Uri.parse('$baseUrl/sellers/$sellerId'),
         headers: token != null ? {'Authorization': 'Bearer $token'} : {},
@@ -849,7 +871,7 @@ class ApiService {
   // Start Chat
   Future<Map<String, dynamic>> startChat(int sellerId) async {
     try {
-      final token = await _getToken();
+      final token = await getToken();
       if (token == null) {
         print('No token for startChat'); // Debugging
         return {
@@ -1107,24 +1129,17 @@ class ApiService {
           'message': 'Daftar chat berhasil diambil.',
         };
       } else {
-        return {
-          'success': false,
-          'message': 'Gagal memuat daftar chat. Status: ${response.statusCode}',
-        };
+        return {};
       }
     } catch (e) {
-      print('Kesalahan saat ambil daftar chat: $e');
-      return {
-        'success': false,
-        'message': 'Terjadi kesalahan: $e',
-      };
+      return {};
     }
   }
 
 // fetchMessages
   Future<Map<String, dynamic>> fetchMessages(int chatId) async {
     try {
-      final token = await _getToken();
+      final token = await getToken();
       if (token == null) {
         print('No token for fetchMessages'); // Debugging
         return {
@@ -1221,84 +1236,194 @@ class ApiService {
   }
   // ... (kode existing lainnya tetap sama)
 
-  Future<Map<String, dynamic>> createTransaction(Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> createTransaction(
+      Map<String, dynamic> data) async {
     try {
-      final token = await _getToken();
+      final token = await getToken();
       if (token == null) {
         return {
           'success': false,
           'message': 'Silakan login terlebih dahulu',
-          'navigateToLogin': true,
+          'navigateToLogin': true
         };
       }
 
-      if (data['email'] == null || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(data['email'])) {
+      if (data['email'] == null ||
+          !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(data['email'])) {
+        return {'success': false, 'message': 'Email tidak valid.'};
+      }
+
+      if (data['product_id'] == null) {
+        return {'success': false, 'message': 'ID produk tidak valid.'};
+      }
+
+      final pendingTransaction =
+          await _fetchPendingTransaction(data['product_id'], token);
+      if (pendingTransaction != null) {
         return {
           'success': false,
-          'message': 'Email tidak valid.',
+          'message': 'Kamu sudah memiliki transaksi yang belum diselesaikan.',
+          'data': {
+            'snap_token': pendingTransaction['snap_token'],
+            'transaction_code': pendingTransaction['transaction_code'],
+          },
         };
       }
 
       final requestData = {
         'email': data['email'],
         'agree': true,
-        'quantity': data['quantity'],
+        'quantity': data['quantity'] ?? 1,
       };
       print('Mengirim data transaksi: ${jsonEncode(requestData)}');
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/process-checkout/${data['product_id']}'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode(requestData),
-      ).timeout(Duration(seconds: 30));
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/process-checkout/${data['product_id']}'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode(requestData),
+          )
+          .timeout(const Duration(seconds: 30));
 
-      print('Status respons transaksi: ${response.statusCode}');
-      print('Isi respons transaksi: ${response.body}');
+      print('Status respons: ${response.statusCode}');
+      print('Isi respons: ${response.body}');
 
-      final responseData = jsonDecode(response.body);
-
-      if (response.statusCode == 201) {
-        if (responseData['success'] == true) {
-          return {
-            'success': true,
-            'message': responseData['message'] ?? 'Transaksi berhasil dibuat.',
-            'data': responseData['data'],
-          };
-        }
-      } else if (response.statusCode == 400 && responseData['data'] != null && responseData['data']['snap_token'] != null) {
+      if (!response.body.startsWith('{') && !response.body.startsWith('[')) {
+        print('Error: Respons bukan JSON, kemungkinan HTML');
         return {
           'success': false,
-          'message': responseData['message'] ?? 'Transaksi tertunda ditemukan.',
-          'data': responseData['data'],
+          'message':
+              'Respons server tidak valid (kemungkinan halaman HTML). Silakan coba lagi nanti.',
         };
       }
 
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        return {
+          'success': true,
+          'message': 'Snap token diterima.',
+          'data': {
+            'snap_token': responseData['data']['snap_token'],
+            'transaction_code': responseData['data']['transaction_code'],
+          },
+        };
+      } else if (response.statusCode == 400 &&
+          responseData['success'] == false) {
+        return {
+          'success': false,
+          'message': responseData['error'],
+          'data': responseData['data'] != null
+              ? {
+                  'snap_token': responseData['data']['snap_token'],
+                  'transaction_code': responseData['data']['transaction_code'],
+                }
+              : null,
+        };
+      } else if (response.statusCode == 401) {
+        return {
+          'success': false,
+          'message': responseData['error'] ?? 'Sesi tidak valid.',
+          'navigateToLogin': true,
+        };
+      }
       return {
         'success': false,
-        'message': responseData['message'] ?? 'Gagal membuat transaksi.',
-        'navigateToLogin': response.statusCode == 401,
+        'message': responseData['error'] ??
+            'Gagal transaksi: Status ${response.statusCode}',
       };
     } catch (e) {
-      print('Kesalahan saat membuat transaksi: $e');
-      return {
-        'success': false,
-        'message': 'Terjadi kesalahan: $e',
-      };
+      print('Error transaksi: $e');
+      return {'success': false, 'message': 'Terjadi kesalahan: $e'};
+    }
+  }
+
+// Fungsi bantu untuk mengambil transaksi tertunda
+  Future<Map<String, dynamic>?> _fetchPendingTransaction(
+      int productId, String token) async {
+    try {
+      final orderHistoryResponse = await fetchOrderHistory();
+      if (orderHistoryResponse['success'] == true &&
+          orderHistoryResponse['data'] != null) {
+        final transactions = orderHistoryResponse['data'] as List<dynamic>;
+        final recentTransaction = transactions.firstWhere(
+          (transaction) =>
+              transaction['product_id'].toString() == productId.toString() &&
+              transaction['status'] == 'pending',
+          orElse: () => {}, // Mengembalikan Map kosong alih-alih null
+        );
+
+        if (recentTransaction.isNotEmpty) {
+          return {
+            'transaction_code': recentTransaction['transaction_code'],
+            'snap_token': recentTransaction['snap_token'],
+          };
+        }
+      }
+      return null;
+    } catch (e) {
+      print('Gagal mengambil transaksi tertunda: $e');
+      return null;
     }
   }
 
   Future<void> downloadFile(String transactionCode) async {
     try {
-      final token = await _getToken();
+      final token = await getToken();
       if (token == null) {
         throw Exception('Silakan login terlebih dahulu');
       }
 
       print('Mengunduh file untuk transaction_code: $transactionCode');
+
+      if (Platform.isAndroid) {
+        final deviceInfo = DeviceInfoPlugin();
+        final androidInfo = await deviceInfo.androidInfo;
+        final sdkInt = androidInfo.version.sdkInt;
+
+        bool isPermissionGranted = false;
+
+        if (sdkInt >= 30) {
+          // Untuk Android 11+ (API 30+), gunakan MANAGE_EXTERNAL_STORAGE
+          if (await Permission.manageExternalStorage.isGranted) {
+            isPermissionGranted = true;
+          } else {
+            final status = await Permission.manageExternalStorage.request();
+            if (status.isGranted) {
+              isPermissionGranted = true;
+            } else if (status.isPermanentlyDenied) {
+              throw Exception(
+                  'Izin penyimpanan ditolak secara permanen. Silakan aktifkan di pengaturan aplikasi.');
+            } else {
+              throw Exception('Izin penyimpanan ditolak.');
+            }
+          }
+        } else {
+          // Untuk Android 10 ke bawah, gunakan WRITE_EXTERNAL_STORAGE
+          if (await Permission.storage.isGranted) {
+            isPermissionGranted = true;
+          } else {
+            final status = await Permission.storage.request();
+            if (status.isGranted) {
+              isPermissionGranted = true;
+            } else if (status.isPermanentlyDenied) {
+              throw Exception(
+                  'Izin penyimpanan ditolak secara permanen. Silakan aktifkan di pengaturan aplikasi.');
+            } else {
+              throw Exception('Izin penyimpanan ditolak.');
+            }
+          }
+        }
+
+        if (!isPermissionGranted) {
+          throw Exception('Izin penyimpanan tidak diberikan.');
+        }
+      }
+
       final response = await http.get(
         Uri.parse('$baseUrl/transactions/$transactionCode/download'),
         headers: {
@@ -1315,47 +1440,38 @@ class ApiService {
         final responseData = jsonDecode(response.body);
         if (responseData['success'] && responseData['file_url'] != null) {
           print('File URL ditemukan: ${responseData['file_url']}');
-          var storagePermission = await Permission.storage.request();
-          if (storagePermission.isGranted) {
-            final directory = await getExternalStorageDirectory();
-            if (directory == null) {
-              throw Exception(
-                  'Gagal mendapatkan direktori penyimpanan eksternal.');
-            }
-            final filePath =
-                '${directory.path}/downloaded_file_${transactionCode}.pdf';
-            print('Menyimpan file ke: $filePath');
 
-            final fileResponse =
-                await http.get(Uri.parse(responseData['file_url']));
-            print('Status respons file download: ${fileResponse.statusCode}');
-            if (fileResponse.statusCode == 200) {
-              final file = File(filePath);
-              await file.writeAsBytes(fileResponse.bodyBytes);
-              print('File berhasil disimpan di: $filePath');
-            } else {
-              throw Exception(
-                  'Gagal mengunduh file dari URL: Status ${fileResponse.statusCode}');
-            }
-          } else if (storagePermission.isPermanentlyDenied) {
-            throw Exception(
-                'Izin penyimpanan ditolak secara permanen. Silakan aktifkan di pengaturan.');
+          // Gunakan folder Download
+          final directory = Directory('/storage/emulated/0/Download');
+          if (!await directory.exists()) {
+            await directory.create(recursive: true);
+          }
+
+          final fileExtension = responseData['file_url'].split('.').last;
+          final fileName =
+              responseData['file_name'] ?? 'downloaded_file_${transactionCode}';
+          final filePath = '${directory.path}/$fileName.$fileExtension';
+          print('Menyimpan file ke: $filePath');
+
+          final fileResponse =
+              await http.get(Uri.parse(responseData['file_url']));
+          print('Status respons file download: ${fileResponse.statusCode}');
+          if (fileResponse.statusCode == 200) {
+            final file = File(filePath);
+            await file.writeAsBytes(fileResponse.bodyBytes);
+            print('File berhasil disimpan di: $filePath');
           } else {
-            throw Exception('Izin penyimpanan ditolak.');
+            throw Exception(
+                'Gagal mengunduh file dari URL: Status ${fileResponse.statusCode}');
           }
         } else {
           throw Exception(responseData['message'] ??
               'Gagal mengunduh file: Respons server tidak valid.');
         }
       } else {
-        try {
-          final responseData = jsonDecode(response.body);
-          throw Exception(responseData['message'] ??
-              'Gagal mengunduh file: Status ${response.statusCode}');
-        } catch (e) {
-          throw Exception(
-              'Gagal mengunduh file: Server mengembalikan respons yang tidak valid (Status ${response.statusCode}).');
-        }
+        final responseData = jsonDecode(response.body);
+        throw Exception(responseData['message'] ??
+            'Gagal mengunduh file: Status ${response.statusCode}');
       }
     } catch (e) {
       print('Kesalahan saat mengunduh file: $e');
@@ -1493,9 +1609,9 @@ class ApiService {
         };
       }
 
-      print('Mengambil riwayat pesanan dari: $baseUrl/order-history');
+      print('Mengambil riwayat pesanan dari: $baseUrl/order-historied');
       var response = await http.get(
-        Uri.parse('$baseUrl/order-history'),
+        Uri.parse('$baseUrl/order-historied'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -1504,9 +1620,20 @@ class ApiService {
       ).timeout(Duration(seconds: 30));
 
       print('Status respons ambil riwayat pesanan: ${response.statusCode}');
-      print('Isi respons ambil riwayat pesanan: ${response.body}');
+      print('Header respons: ${response.headers}');
+      print(
+          'Isi respons ambil riwayat pesanan: ${response.body.length > 500 ? response.body.substring(0, 500) + '...' : response.body}');
 
       if (response.statusCode == 200) {
+        if (!response.body.startsWith('{') && !response.body.startsWith('[')) {
+          print('Error: Respons bukan JSON, kemungkinan HTML');
+          return {
+            'success': false,
+            'message':
+                'Respons server tidak valid (kemungkinan halaman HTML). Silakan coba lagi nanti.',
+          };
+        }
+
         try {
           var responseData = jsonDecode(response.body);
           if (responseData['success'] != true) {
@@ -1538,6 +1665,7 @@ class ApiService {
               'status': json['status'],
               'download_count': json['download_count'] ?? 0,
               'has_reviewed': json['has_reviewed'] ?? false,
+              'snap_token': json['snap_token'],
             };
           }).toList();
 
@@ -1625,7 +1753,7 @@ class ApiService {
 
   Future<void> cancelTransaction(String transactionCode) async {
     try {
-      final token = await _getToken();
+      final token = await getToken();
       if (token == null) {
         throw Exception('Silakan login terlebih dahulu');
       }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/faq.dart';
-import 'cart.dart';
 
 class HelpCenterPage extends StatefulWidget {
   @override
@@ -238,19 +237,6 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
               icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
               onPressed: () {
                 Navigator.pop(context);
-              },
-            ),
-          ),
-          Positioned(
-            top: 10,
-            right: 10,
-            child: IconButton(
-              icon: Icon(Icons.shopping_cart_outlined, color: Theme.of(context).iconTheme.color),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Cart()),
-                );
               },
             ),
           ),

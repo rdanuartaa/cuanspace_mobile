@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cuan_space/services/api_service.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:http/http.dart' as http;
 import '/main.dart';
 
 class Checkout extends StatefulWidget {
@@ -48,13 +49,10 @@ class _CheckoutState extends State<Checkout> {
     try {
       final user = await apiService.getCurrentUser();
       if (user == null || user.id == null) {
-        print(
-            'Error processPayment: User tidak ditemukan atau sesi tidak valid');
         showFloatingNotification('Silakan login terlebih dahulu');
         Navigator.pushReplacementNamed(context, '/login');
         return;
       }
-      print('User ditemukan: ${user.id}, email: ${user.email}');
 
       setState(() {
         isLoading = true;
@@ -68,29 +66,23 @@ class _CheckoutState extends State<Checkout> {
         'product_id': args['product_id'],
         'quantity': args['quantity'],
         'email': user.email ?? 'user@example.com',
+        'agree': true,
       });
-
-      print('createTransaction result: $result');
 
       String? snapToken;
       String? transactionCode;
 
-      if (result['success'] == true) {
+      if (result['success'] == true && result['data'] != null) {
         snapToken = result['data']['snap_token'];
         transactionCode = result['data']['transaction_code'];
-        print('Snap token: $snapToken, Transaction code: $transactionCode');
-      } else if (result['data'] != null &&
-          result['data']['snap_token'] != null) {
+      } else if (result['success'] == false && result['data'] != null) {
         snapToken = result['data']['snap_token'];
         transactionCode = result['data']['transaction_code'];
-        print(
-            'Pending transaction found - Snap token: $snapToken, Transaction code: $transactionCode');
-        showFloatingNotification(
-            'Anda memiliki transaksi yang belum diselesaikan. Silakan selesaikan pembayaran atau batalkan transaksi.');
+        showFloatingNotification(result['message']);
         final action = await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Transaksi Pending'),
+            title: const Text('Transaksi Tertunda'),
             content: const Text(
                 'Anda memiliki transaksi yang belum diselesaikan. Apa yang ingin Anda lakukan?'),
             actions: [
@@ -107,13 +99,19 @@ class _CheckoutState extends State<Checkout> {
         );
 
         if (action == 'cancel') {
-          await apiService.cancelTransaction(transactionCode!);
-          showFloatingNotification('Transaksi pending telah dibatalkan.');
-          return processPayment(args); // Ulangi proses pembayaran
+          if (transactionCode != null) {
+            await apiService.cancelTransaction(transactionCode);
+            showFloatingNotification('Transaksi tertunda telah dibatalkan.');
+            return processPayment(args);
+          } else {
+            showFloatingNotification(
+                'Gagal membatalkan transaksi: Kode transaksi tidak ditemukan.');
+            return;
+          }
         }
       } else {
-        print('Error createTransaction: ${result['message']}');
-        showFloatingNotification(result['message']);
+        showFloatingNotification(
+            result['message'] ?? 'Gagal membuat transaksi.');
         if (result['navigateToLogin'] == true) {
           Navigator.pushReplacementNamed(context, '/login');
         }
@@ -135,64 +133,81 @@ class _CheckoutState extends State<Checkout> {
                           url: WebUri(
                               'https://app.sandbox.midtrans.com/snap/v2/vtweb/$snapToken')),
                       onLoadStop: (controller, url) async {
-                        if (url != null &&
-                            url.toString().contains('transaction_status')) {
-                          try {
-                            final uri = Uri.parse(url.toString());
-                            final transactionStatus =
-                                uri.queryParameters['transaction_status'];
-                            print(
-                                'Midtrans transaction status: $transactionStatus');
+                        if (url != null) {
+                          final uri = Uri.parse(url.toString());
+                          final transactionStatus =
+                              uri.queryParameters['transaction_status'];
 
-                            if (transactionStatus != null) {
-                              switch (transactionStatus) {
-                                case 'settlement':
-                                case 'capture':
-                                  Navigator.pop(context);
-                                  Navigator.pushNamed(
-                                      context, '/order-confirmation',
-                                      arguments: {
-                                        'order_id': transactionCode,
-                                        'product_name': args['product_name'],
-                                        'quantity': args['quantity'],
-                                        'total_price':
-                                            args['price'] * args['quantity'],
-                                      });
-                                  showFloatingNotification(
-                                      'Pembayaran berhasil!');
-                                  break;
-                                case 'cancel':
-                                case 'expire':
-                                  Navigator.pop(context);
-                                  showFloatingNotification(
-                                      'Transaksi dibatalkan atau kedaluwarsa.');
-                                  break;
-                                case 'deny':
-                                  Navigator.pop(context);
-                                  showFloatingNotification(
-                                      'Pembayaran ditolak.');
-                                  break;
-                                default:
-                                  showFloatingNotification(
-                                      'Status transaksi tidak dikenal.');
+                          if (transactionStatus != null ||
+                              url.toString().contains('transaction_status') ||
+                              url.toString().contains('#/409') ||
+                              url.toString().contains('#/payment-list')) {
+                            // Verifikasi status dengan backend
+                            final token = await apiService.getToken();
+                            if (token == null) {
+                              Navigator.pop(context);
+                              showFloatingNotification(
+                                  'Sesi tidak valid. Silakan login kembali.');
+                              Navigator.pushReplacementNamed(context, '/login');
+                              return;
+                            }
+
+                            final statusResponse = await http.get(
+                              Uri.parse(
+                                  '${ApiService.baseUrl}/transactions/$transactionCode/status'),
+                              headers: {
+                                'Authorization': 'Bearer $token',
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                              },
+                            );
+
+                            if (statusResponse.statusCode == 200) {
+                              final statusData =
+                                  jsonDecode(statusResponse.body);
+                              if (statusData['success']) {
+                                switch (statusData['status']) {
+                                  case 'paid':
+                                    Navigator.pop(context);
+                                    Navigator.pushNamed(
+                                        context, '/order-confirmation',
+                                        arguments: {
+                                          'order_id': transactionCode,
+                                          'product_name': args['product_name'],
+                                          'quantity': args['quantity'],
+                                          'total_price':
+                                              args['price'] * args['quantity'],
+                                        });
+                                    showFloatingNotification(
+                                        'Pembayaran berhasil!');
+                                    break;
+                                  case 'cancel':
+                                  case 'expired':
+                                    Navigator.pop(context);
+                                    showFloatingNotification(
+                                        'Transaksi dibatalkan atau kedaluwarsa.');
+                                    break;
+                                  case 'failed':
+                                    Navigator.pop(context);
+                                    showFloatingNotification(
+                                        'Pembayaran ditolak.');
+                                    break;
+                                  default:
+                                    // Tidak melakukan apa-apa, tunggu pembaruan status
+                                    break;
+                                }
                               }
                             } else {
                               showFloatingNotification(
-                                  'Gagal memproses status transaksi.');
+                                  'Gagal memeriksa status transaksi.');
                             }
-                          } catch (e) {
-                            print('Error parsing transaction status: $e');
-                            Navigator.pop(context);
-                            showFloatingNotification(
-                                'Gagal memproses status transaksi.');
                           }
                         }
                       },
                       onLoadError: (controller, url, code, message) {
-                        print('WebView error: $message');
                         Navigator.pop(context);
                         showFloatingNotification(
-                            'Gagal memuat halaman pembayaran.');
+                            'Gagal memuat halaman pembayaran: $message');
                       },
                     ),
                   ),
@@ -208,9 +223,11 @@ class _CheckoutState extends State<Checkout> {
             ),
           ),
         );
+      } else {
+        showFloatingNotification(
+            'Gagal mendapatkan snap token atau kode transaksi.');
       }
     } catch (e) {
-      print('Error processPayment: $e');
       showFloatingNotification('Terjadi kesalahan: $e');
     } finally {
       setState(() {

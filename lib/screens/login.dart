@@ -26,6 +26,20 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
     _buttonAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+
+    // Periksa apakah pengguna sudah login
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    print('Token on app start: $token');
+
+    if (token != null && token.isNotEmpty) {
+      // Token ada, arahkan ke halaman home
+      Navigator.pushReplacementNamed(context, '/home');
+    }
   }
 
   @override
@@ -37,19 +51,19 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
   }
 
   Future<void> loginUser() async {
-  if (_formKey.currentState!.validate()) {
-    var result = await _apiService.login(
-      _emailController.text,
-      _passwordController.text,
-    );
-    print('Login result: $result');
-    if (result['success']) {
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      _showErrorDialog(result['message']);
+    if (_formKey.currentState!.validate()) {
+      var result = await _apiService.login(
+        _emailController.text,
+        _passwordController.text,
+      );
+      print('Login result: $result');
+      if (result['success']) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        _showErrorDialog(result['message']);
+      }
     }
   }
-}
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -109,7 +123,10 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                     Text(
                       'Add your details to login',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.7),
                           ),
                     ),
                     const SizedBox(height: 30),
@@ -123,7 +140,8 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email';
                         }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                            .hasMatch(value)) {
                           return 'Please enter a valid email';
                         }
                         return null;
@@ -174,24 +192,35 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
                     Text(
                       'or Login With',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.7),
                           ),
-                    ),       
+                    ),
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           "Don't have an Account? ",
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.7),
+                                  ),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.pushNamed(context, '/register'),
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/register'),
                           child: Text(
                             'Sign Up',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
                                   color: darkOrange,
                                   fontWeight: FontWeight.bold,
                                 ),

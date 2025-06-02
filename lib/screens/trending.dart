@@ -5,7 +5,6 @@ import 'package:cuan_space/bloc/trending/trending_bloc.dart';
 import 'package:cuan_space/bloc/trending/trending_event.dart';
 import 'package:cuan_space/bloc/trending/trending_state.dart';
 import 'package:cuan_space/services/api_service.dart';
-import 'package:cuan_space/screens/cart.dart';
 import 'package:cuan_space/main.dart';
 
 import '../models/product.dart';
@@ -43,136 +42,124 @@ class _TrendingState extends State<Trending> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => TrendingBloc(ApiService())
-        ..add(const FetchTrendingProducts('purchases')),
-      child: Scaffold(
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+        create: (context) => TrendingBloc(ApiService())
+          ..add(const FetchTrendingProducts('purchases')),
+        child: Scaffold(
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
+                decoration: const BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Text(
+                      'Trending Products',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  const Text(
-                    'Trending Products',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.shopping_cart_outlined,
-                        color: darkOrange, size: 20),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const Cart()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: BlocBuilder<TrendingBloc, TrendingState>(
-                builder: (context, state) {
-                  if (state is TrendingLoading) {
-                    return const Center(
-                        child: CircularProgressIndicator(color: darkOrange));
-                  } else if (state is TrendingLoaded) {
-                    if (state.products.isEmpty) {
+              Expanded(
+                child: BlocBuilder<TrendingBloc, TrendingState>(
+                  builder: (context, state) {
+                    if (state is TrendingLoading) {
                       return const Center(
-                          child: Text('Tidak ada produk trending'));
-                    }
+                          child: CircularProgressIndicator(color: darkOrange));
+                    } else if (state is TrendingLoaded) {
+                      if (state.products.isEmpty) {
+                        return const Center(
+                            child: Text('Tidak ada produk trending'));
+                      }
 
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(16),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 14,
-                        mainAxisSpacing: 14,
-                        childAspectRatio: 0.7,
-                      ),
-                      itemCount: state.products.length,
-                      itemBuilder: (context, index) {
-                        final product = state.products[index];
-                        return ProductCard(product: product);
-                      },
-                    );
-                  } else if (state is TrendingError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text('Error: ${state.message}'),
-                          const SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              context.read<TrendingBloc>().add(
-                                  const FetchTrendingProducts('purchases'));
-                            },
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: darkOrange),
-                            child: const Text('Coba Lagi'),
-                          ),
-                        ],
-                      ),
-                    );
-                  } else if (state is TrendingNavigateToLogin) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      Navigator.pushNamed(context, '/login');
-                    });
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 14,
+                          mainAxisSpacing: 14,
+                          childAspectRatio: 0.7,
+                        ),
+                        itemCount: state.products.length,
+                        itemBuilder: (context, index) {
+                          final product = state.products[index];
+                          return ProductCard(product: product);
+                        },
+                      );
+                    } else if (state is TrendingError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Error: ${state.message}'),
+                            const SizedBox(height: 10),
+                            ElevatedButton(
+                              onPressed: () {
+                                context.read<TrendingBloc>().add(
+                                    const FetchTrendingProducts('purchases'));
+                              },
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: darkOrange),
+                              child: const Text('Coba Lagi'),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else if (state is TrendingNavigateToLogin) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        Navigator.pushNamed(context, '/login');
+                      });
+                      return const Center(
+                          child: Text('Mengalihkan ke halaman login...'));
+                    }
                     return const Center(
-                        child: Text('Mengalihkan ke halaman login...'));
-                  }
-                  return const Center(
-                      child: Text('Gagal memuat produk trending'));
-                },
+                        child: Text('Gagal memuat produk trending'));
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home, size: 24),
-              label: 'Beranda',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.explore, size: 24),
-              label: 'Trending',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications, size: 24),
-              label: 'Notifikasi',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person, size: 24),
-              label: 'Profil',
-            ),
-          ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: darkOrange,
-          unselectedItemColor: Theme.of(context).colorScheme.onSurface,
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          elevation: 4,
-          showUnselectedLabels: true,
-        ),
-      ),
-    );
+            ],
+          ),
+          bottomNavigationBar: BottomNavigationBar(
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home, size: 24),
+                label: 'Beranda',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.explore, size: 24),
+                label: 'Trending',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.notifications, size: 24),
+                label: 'Notifikasi',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person, size: 24),
+                label: 'Profil',
+              ),
+            ],
+            currentIndex: _selectedIndex,
+            selectedItemColor: darkOrange,
+            unselectedItemColor: Theme.of(context).colorScheme.onSurface,
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            onTap: _onItemTapped,
+            type: BottomNavigationBarType.fixed,
+            elevation: 4,
+            showUnselectedLabels: true,
+          ),
+        ));
   }
 }
 
