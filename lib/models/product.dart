@@ -14,8 +14,8 @@ class Product {
   final String status;
   final int? transactionCount;
   final Kategori? kategori;
-  final double averageRating; // Tambahkan properti untuk rata-rata rating
-  final int reviewCount;     // Tambahkan properti untuk jumlah ulasan
+  final double averageRating;
+  final int reviewCount;
 
   Product({
     required this.id,
@@ -29,8 +29,8 @@ class Product {
     required this.status,
     this.transactionCount,
     this.kategori,
-    this.averageRating = 0.0, // Default ke 0.0 jika tidak ada rating
-    this.reviewCount = 0,     // Default ke 0 jika tidak ada ulasan
+    this.averageRating = 0.0,
+    this.reviewCount = 0,
   });
 
   String get formattedPrice {
@@ -49,23 +49,29 @@ class Product {
       price: json['price'] != null
           ? (json['price'] is String
               ? double.tryParse(json['price']) ?? 0.0
-              : (json['price'] as num).toDouble())
+              : (json['price'] is num ? json['price'].toDouble() : 0.0))
           : 0.0,
       image: imageUrl,
       digitalFile: json['digital_file']?.toString() ?? '',
       status: json['status']?.toString() ?? 'unknown',
-      transactionCount: json['transaction_count'] is int
-          ? json['transaction_count']
-          : int.tryParse(json['transaction_count'].toString()) ?? 0,
+      transactionCount: json['transaction_count'] != null
+          ? (json['transaction_count'] is String
+              ? int.tryParse(json['transaction_count']) ?? 0
+              : json['transaction_count'] is num ? json['transaction_count'].toInt() : 0)
+          : 0,
       kategori: json['kategori'] != null && json['kategori'] is Map
           ? Kategori.fromJson(json['kategori'] as Map<String, dynamic>)
           : null,
-      averageRating: (json['average_rating'] is num
-          ? (json['average_rating'] as num).toDouble()
-          : double.tryParse(json['average_rating'].toString()) ?? 0.0),
-      reviewCount: json['review_count'] is int
-          ? json['review_count']
-          : int.tryParse(json['review_count'].toString()) ?? 0,
+      averageRating: json['average_rating'] != null
+          ? (json['average_rating'] is String
+              ? double.tryParse(json['average_rating']) ?? 0.0
+              : json['average_rating'] is num ? json['average_rating'].toDouble() : 0.0)
+          : 0.0,
+      reviewCount: json['review_count'] != null
+          ? (json['review_count'] is String
+              ? int.tryParse(json['review_count']) ?? 0
+              : json['review_count'] is num ? json['review_count'].toInt() : 0)
+          : 0,
     );
   }
 

@@ -22,9 +22,9 @@ class ApiService {
   // static const String baseUrl = 'http:/10.0.0.2:8000/api';
   // static const String storageUrl = 'http://10.0.0.2:8000/storage';
   static const String baseUrl =
-      'https://b977-125-166-117-180.ngrok-free.app/api';
+      'https://cuanspacedemo.my.id/api';
   static const String storageUrl =
-      'https://b977-125-166-117-180.ngrok-free.app/storage';
+      'https://cuanspacedemo.my.id/storage';
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
@@ -1601,6 +1601,7 @@ class ApiService {
       final token = prefs.getString('token');
 
       if (token == null || token.isEmpty) {
+        print('Error: Token tidak ditemukan atau tidak valid');
         return {
           'success': false,
           'message':
@@ -1617,7 +1618,7 @@ class ApiService {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
         },
-      ).timeout(Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 30));
 
       print('Status respons ambil riwayat pesanan: ${response.statusCode}');
       print('Header respons: ${response.headers}');
@@ -1637,6 +1638,7 @@ class ApiService {
         try {
           var responseData = jsonDecode(response.body);
           if (responseData['success'] != true) {
+            print('Error: API response not successful: ${responseData['message']}');
             return {
               'success': false,
               'message':
@@ -1645,34 +1647,41 @@ class ApiService {
           }
 
           List<dynamic> transactions =
-              (responseData['data'] as List).map((json) {
+              (responseData['data'] as List<dynamic>).map((json) {
             var productJson = json['product'] as Map<String, dynamic>;
             if (productJson['thumbnail'] != null &&
                 !productJson['thumbnail'].startsWith('http')) {
-              productJson['thumbnail'] =
-                  '$storageUrl/${productJson['thumbnail']}';
+              productJson['thumbnail'] = '$storageUrl/${productJson['thumbnail']}';
             } else if (productJson['thumbnail'] == null) {
               productJson['thumbnail'] = 'https://via.placeholder.com/300x200';
             }
             return {
-              'id': json['id'],
-              'transaction_code': json['transaction_code'],
-              'product_id': json['product_id'],
+              'id': json['id'] is String
+                  ? int.tryParse(json['id']) ?? 0
+                  : json['id'] is num ? json['id'].toInt() : 0,
+              'transaction_code': json['transaction_code']?.toString() ?? '',
+              'product_id': json['product_id'] is String
+                  ? int.tryParse(json['product_id']) ?? 0
+                  : json['product_id'] is num ? json['product_id'].toInt() : 0,
               'product': productJson,
               'amount': json['amount'] is String
                   ? double.tryParse(json['amount']) ?? 0.0
-                  : (json['amount'] as num).toDouble(),
-              'status': json['status'],
-              'download_count': json['download_count'] ?? 0,
+                  : json['amount'] is num ? json['amount'].toDouble() : 0.0,
+              'status': json['status']?.toString() ?? 'pending',
+              'download_count': json['download_count'] is String
+                  ? json['download_count'] is String
+                  ? int.tryParse(json['download_count']) ?? 0
+                  : json['download_count'] is num ? json['download_count'].toInt() : 0
+                  : 0,
               'has_reviewed': json['has_reviewed'] ?? false,
-              'snap_token': json['snap_token'],
+              'snap_token': json['snap_token']?.toString(),
             };
           }).toList();
 
           return {
             'success': true,
             'data': transactions,
-            'message': 'Riwayat pesanan berhasil diambil.',
+            'message': 'Riwayat Transaksi diambil dengan berhasil.',
           };
         } catch (e) {
           print('Error parsing order history response: $e');
@@ -1683,6 +1692,7 @@ class ApiService {
           };
         }
       } else {
+        print('Error: Gagal memuat status code ${response.statusCode}');
         return {
           'success': false,
           'message': 'Gagal memuat riwayat pesanan: ${response.statusCode}',
@@ -1690,7 +1700,7 @@ class ApiService {
         };
       }
     } catch (e) {
-      print('Kesalahan saat ambil riwayat pesanan: $e');
+      print('Kesalahan saat ambil riwayat pesanan: $e}');
       return {
         'success': false,
         'message': 'Terjadi kesalahan: $e',

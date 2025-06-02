@@ -62,13 +62,18 @@ class _ProductDetailState extends State<ProductDetail> {
           (transaction) =>
               transaction['product_id'] == widget.product.id &&
               transaction['status'] == 'paid',
-          orElse: () => null,
+          orElse: () => {}, // Mengembalikan Map kosong alih-alih null
         );
 
         setState(() {
-          if (matchingTransaction != null) {
+          if (matchingTransaction.isNotEmpty) {
             hasPurchased = true;
-            downloadCount = matchingTransaction['download_count'] ?? 0;
+            // Konversi download_count ke int dengan aman
+            downloadCount = matchingTransaction['download_count'] is String
+                ? int.tryParse(matchingTransaction['download_count']) ?? 0
+                : matchingTransaction['download_count'] is num
+                    ? matchingTransaction['download_count'].toInt()
+                    : 0;
             canDownload = downloadCount < maxDownload;
           } else {
             hasPurchased = false;
@@ -102,7 +107,11 @@ class _ProductDetailState extends State<ProductDetail> {
     if (reviews.isEmpty) return 0.0;
     double totalRating = 0.0;
     for (var review in reviews) {
-      totalRating += (review['rating'] as num).toDouble();
+      totalRating += (review['rating'] is String
+          ? double.tryParse(review['rating']) ?? 0.0
+          : review['rating'] is num
+              ? review['rating'].toDouble()
+              : 0.0);
     }
     return totalRating / reviews.length;
   }
@@ -388,8 +397,17 @@ class _ProductDetailState extends State<ProductDetail> {
                                                     Row(
                                                       children: List.generate(
                                                         (review['rating']
-                                                                as num)
-                                                            .toInt(),
+                                                                    is String
+                                                                ? int.tryParse(
+                                                                    review[
+                                                                        'rating'])
+                                                                : review['rating']
+                                                                        is num
+                                                                    ? review[
+                                                                            'rating']
+                                                                        .toInt()
+                                                                    : 0) ??
+                                                            0,
                                                         (index) => const Icon(
                                                           Icons.star,
                                                           color: Colors.yellow,
@@ -509,11 +527,12 @@ class _ProductDetailState extends State<ProductDetail> {
                                   transaction['product_id'] ==
                                       widget.product.id &&
                                   transaction['status'] == 'paid',
-                              orElse: () => {},
+                              orElse: () => {}, // Mengembalikan Map kosong
                             );
 
                             if (matchingTransaction.isNotEmpty) {
-                              Navigator.pushNamed(context, '/order-confirmation',
+                              Navigator.pushNamed(
+                                  context, '/order-confirmation',
                                   arguments: {
                                     'order_id':
                                         matchingTransaction['transaction_code'],
@@ -522,7 +541,8 @@ class _ProductDetailState extends State<ProductDetail> {
                                     'total_price': widget.product.price,
                                   });
                             } else {
-                              showFloatingNotification('Transaksi tidak ditemukan.');
+                              showFloatingNotification(
+                                  'Transaksi tidak ditemukan.');
                             }
                           }
                         } catch (e) {
